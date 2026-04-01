@@ -17,6 +17,8 @@ const colors = '#f9b207'
 
 let cesiumViewer = null
 let postRenderListener = null
+let rafId = null
+let lastRenderAt = 0
 
 async function loadMarkers() {
   const res = await fetch('/markers-popup.json')
@@ -61,7 +63,7 @@ function buildOption(w, h, centerMarker, targets) {
 
   return {
     backgroundColor: 'transparent',
-    animation: true,
+    animation: false,
     grid: { left: 0, right: 0, top: 0, bottom: 0 },
     xAxis: {
       type: 'value',
@@ -155,20 +157,31 @@ async function init() {
     if (w <= 0 || h <= 0) return
     const option = buildOption(w, h, centerMarker, targets)
     if (!option) return
-    chart.setOption(option, { notMerge: true, lazyUpdate: true })
+    chart.setOption(option, { notMerge: true, lazyUpdate: true, silent: true })
+  }
+
+  const scheduleRender = () => {
+    const now = performance.now()
+    if (now - lastRenderAt < 80) return
+    if (rafId != null) return
+    rafId = requestAnimationFrame(() => {
+      rafId = null
+      lastRenderAt = performance.now()
+      render()
+    })
   }
 
   render()
 
   resizeObserver = new ResizeObserver(() => {
     chart?.resize()
-    render()
+    scheduleRender()
   })
   resizeObserver.observe(chartRef.value)
 
   // 随 Cesium 相机/渲染帧更新，保证屏幕坐标完全对齐
   if (cesiumViewer?.scene) {
-    postRenderListener = () => render()
+    postRenderListener = () => scheduleRender()
     cesiumViewer.scene.postRender.addEventListener(postRenderListener)
   }
 }
@@ -188,6 +201,10 @@ onBeforeUnmount(() => {
   if (cesiumViewer?.scene && postRenderListener) {
     cesiumViewer.scene.postRender.removeEventListener(postRenderListener)
     postRenderListener = null
+  }
+  if (rafId != null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
   }
   if (chart) {
     chart.dispose()

@@ -47,6 +47,7 @@ const cesiumContainer = ref(null)
 let viewer = null
 let clickHandler = null
 let postRenderListener = null
+let cameraMoveEndListener = null
 
 const ORANGE = Cesium.Color.fromCssColorString('#FF9430')
 const BLUE = Cesium.Color.fromCssColorString('#165DFF')
@@ -112,6 +113,27 @@ function fromDegreesArrayToWebMercator(degreesArray) {
   return result
 }
 
+function geometryToRings(geometry) {
+  if (!geometry || !geometry.type || !geometry.coordinates) return []
+  if (geometry.type === 'Polygon') return geometry.coordinates
+  if (geometry.type === 'MultiPolygon') return geometry.coordinates.flat()
+  return []
+}
+
+function ringLonLatToPositions(ring) {
+  const positions = []
+  for (let i = 0; i < ring.length; i++) {
+    const p = ring[i]
+    if (!Array.isArray(p) || p.length < 2) continue
+    const lon = p[0]
+    const lat = p[1]
+    if (lon == null || lat == null) continue
+    const wm = toWebMercator(lon, lat)
+    positions.push(fromWebMercator(wm.x, wm.y, 0))
+  }
+  return positions
+}
+
 function updatePopupScreenPosition() {
   if (!viewer || !activePopupPosition) return
   const scene = viewer.scene
@@ -128,7 +150,7 @@ function updatePopupScreenPosition() {
 
 function openPopup(payload, worldPosition, clickScreen) {
   popupData.title = payload.title || payload.name || ''
-  popupData.summary = payload.summary || ''
+  popupData.summary = payload.summary || payload.title || payload.name || '暂无详细介绍'
   popupData.images = Array.isArray(payload.images) ? [...payload.images] : []
   activePopupPosition = worldPosition
   popupAnchorScreenFallback =
@@ -396,7 +418,7 @@ function setSelectedMarker(m, worldPosition) {
  * 用屏幕距离在点位/箭头/标签附近命中，作为可靠回退。
  */
 function tryOpenPopupByScreenProximity(clickScreen) {
-  const maxPx = 120
+  const maxPx = 160
   const maxSq = maxPx * maxPx
   let bestM = null
   let bestWorld = null
@@ -408,15 +430,23 @@ function tryOpenPopupByScreenProximity(clickScreen) {
     const p0 = fromWebMercator(wm.x, wm.y, 0)
     const sc = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, p0)
     if (!sc) continue
-    const labelApprox = { x: sc.x, y: sc.y - 44 }
-    const candidates = [sc, labelApprox]
-    for (let i = 0; i < candidates.length; i++) {
-      const d = distSqScreen(clickScreen, candidates[i])
-      if (d < bestD) {
-        bestD = d
-        bestM = m
-        bestWorld = p0
-      }
+    // 先做 hitbox 命中（标牌 100x48，锚点在底部中心）
+    const left = sc.x - 52
+    const right = sc.x + 52
+    const top = sc.y - 52
+    const bottom = sc.y + 8
+    if (clickScreen.x >= left && clickScreen.x <= right && clickScreen.y >= top && clickScreen.y <= bottom) {
+      openPopup(m, p0, clickScreen)
+      setSelectedMarker(m, p0)
+      viewer.scene.requestRender()
+      return true
+    }
+    // 再退化为中心距离命中
+    const d = distSqScreen(clickScreen, { x: sc.x, y: sc.y - 24 })
+    if (d < bestD) {
+      bestD = d
+      bestM = m
+      bestWorld = p0
     }
   }
 
@@ -450,13 +480,31 @@ function addChinaBoundary3857() {
   const flatCoords = chinaBoundaryCoords.flat()
   const wm3857Positions = fromDegreesArrayToWebMercator(flatCoords)
 
+  // 方案二：增强轮廓层次（外发光 + 内实线 + 更明显的浅填充）
+  const glowBlue = Cesium.Color.fromCssColorString('#42ACFF').withAlpha(0.95)
+  const innerWhite = Cesium.Color.WHITE.withAlpha(0.95)
+
+  // 外发光轮廓（最先添加，作为底层光晕）
+  viewer.entities.add({
+    name: '中国边界-3857-glow',
+    polyline: {
+      positions: wm3857Positions,
+      width: 10,
+      material: new Cesium.PolylineGlowMaterialProperty({
+        glowPower: 0.25,
+        color: glowBlue
+      }),
+      clampToGround: true
+    }
+  })
+
   viewer.entities.add({
     name: '中国边界-3857',
     polyline: {
       positions: wm3857Positions,
       width: 3,
       material: new Cesium.PolylineDashMaterialProperty({
-        color: Cesium.Color.WHITE,
+        color: innerWhite,
         dashLength: 8,
         gapColor: Cesium.Color.TRANSPARENT
       }),
@@ -465,17 +513,115 @@ function addChinaBoundary3857() {
     }
   })
 
+  // 内实线（压在虚线上，让轮廓更清晰）
+  viewer.entities.add({
+    name: '中国边界-3857-solid',
+    polyline: {
+      positions: wm3857Positions,
+      width: 1.6,
+      material: innerWhite,
+      clampToGround: true
+    }
+  })
+
   viewer.entities.add({
     name: '中国区域-3857',
     polygon: {
       hierarchy: new Cesium.PolygonHierarchy(wm3857Positions),
-      material: Cesium.Color.WHITE.withAlpha(0.08),
+      material: Cesium.Color.fromCssColorString('#EAF6FF').withAlpha(0.32),
       outline: true,
-      outlineColor: Cesium.Color.WHITE,
+      outlineColor: glowBlue.withAlpha(0.9),
       outlineWidth: 1,
       clampToGround: true
     }
   })
+}
+
+async function addChinaBoundaryFromGeoJson() {
+  // 公开行政边界数据（WGS84）
+  const url = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json'
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`china geojson load failed: ${res.status}`)
+  const geojson = await res.json()
+  const features = Array.isArray(geojson?.features) ? geojson.features : []
+  if (!features.length) throw new Error('empty china geojson features')
+
+  const glowBlue = Cesium.Color.fromCssColorString('#42ACFF').withAlpha(0.95)
+  const innerWhite = Cesium.Color.WHITE.withAlpha(0.92)
+  const provinceLine = Cesium.Color.fromCssColorString('#BDE9FF').withAlpha(0.35)
+  const fillColor = Cesium.Color.fromCssColorString('#EAF6FF').withAlpha(0.18)
+
+  const outerRings = []
+  const innerRings = []
+  for (const f of features) {
+    const rings = geometryToRings(f.geometry)
+    for (let i = 0; i < rings.length; i++) {
+      const ring = rings[i]
+      if (!ring || ring.length < 3) continue
+      if (i === 0) outerRings.push(ring)
+      else innerRings.push(ring)
+    }
+  }
+
+  // 省界淡线
+  for (const f of features) {
+    const rings = geometryToRings(f.geometry)
+    for (const ring of rings) {
+      const positions = ringLonLatToPositions(ring)
+      if (positions.length < 2) continue
+      viewer.entities.add({
+        name: '中国省界线',
+        polyline: {
+          positions,
+          width: 1,
+          material: provinceLine,
+          clampToGround: true
+        }
+      })
+    }
+  }
+
+  // 外轮廓发光 + 实线
+  for (const ring of outerRings) {
+    const positions = ringLonLatToPositions(ring)
+    if (positions.length < 2) continue
+    viewer.entities.add({
+      name: '中国边界-geo-glow',
+      polyline: {
+        positions,
+        width: 8,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.22,
+          color: glowBlue
+        }),
+        clampToGround: true
+      }
+    })
+    viewer.entities.add({
+      name: '中国边界-geo-solid',
+      polyline: {
+        positions,
+        width: 1.6,
+        material: innerWhite,
+        clampToGround: true
+      }
+    })
+  }
+
+  // 区域浅填充（只填外环）
+  for (const ring of outerRings) {
+    const positions = ringLonLatToPositions(ring)
+    if (positions.length < 3) continue
+    viewer.entities.add({
+      name: '中国区域-geo-fill',
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy(positions),
+        material: fillColor,
+        outline: false,
+        clampToGround: true
+      }
+    })
+  }
 }
 
 function addMarkers3857(markers) {
@@ -581,9 +727,10 @@ onMounted(async () => {
     }
   })
 
+  const imageryRectangle = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
   const styleBgImagery = new Cesium.SingleTileImageryProvider({
     url: bgImg,
-    rectangle: Cesium.Rectangle.fromDegrees(73, 18, 135, 54),
+    rectangle: imageryRectangle,
     tileWidth: 2048,
     tileHeight: 2048,
     projection: webMercatorProjection
@@ -602,6 +749,34 @@ onMounted(async () => {
   viewer.scene.screenSpaceCameraController.enableZoom = true
   viewer.scene.screenSpaceCameraController.enableTilt = false
   viewer.scene.screenSpaceCameraController.enableLook = false
+  // 避免缩得过小看到影像矩形外区域（可按视觉再微调）
+  viewer.scene.screenSpaceCameraController.maximumZoomDistance = 2900000
+  viewer.scene.screenSpaceCameraController.minimumZoomDistance = 350000
+
+  const clampLonLatToImageryRect = () => {
+    if (!viewer) return
+    const c = viewer.camera.positionCartographic
+    if (!c) return
+    const lon = Cesium.Math.toDegrees(c.longitude)
+    const lat = Cesium.Math.toDegrees(c.latitude)
+    const clampedLon = Cesium.Math.clamp(
+      lon,
+      Cesium.Math.toDegrees(imageryRectangle.west),
+      Cesium.Math.toDegrees(imageryRectangle.east)
+    )
+    const clampedLat = Cesium.Math.clamp(
+      lat,
+      Cesium.Math.toDegrees(imageryRectangle.south),
+      Cesium.Math.toDegrees(imageryRectangle.north)
+    )
+    if (Math.abs(clampedLon - lon) > 1e-6 || Math.abs(clampedLat - lat) > 1e-6) {
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(clampedLon, clampedLat, c.height)
+      })
+    }
+  }
+  cameraMoveEndListener = clampLonLatToImageryRect
+  viewer.camera.moveEnd.addEventListener(cameraMoveEndListener)
 
   const bayannurCoords = { lon: 107.386, lat: 40.751 }
   const bayannur3857 = toWebMercator(bayannurCoords.lon, bayannurCoords.lat)
@@ -617,7 +792,12 @@ onMounted(async () => {
 
   viewer.cesiumWidget.creditContainer.style.display = 'none'
 
-  addChinaBoundary3857()
+  try {
+    await addChinaBoundaryFromGeoJson()
+  } catch (e) {
+    console.warn('china geojson 加载失败，回退到示意边界', e)
+    addChinaBoundary3857()
+  }
 
   iconBlueDataUrl = await createBlueMarkerIconDataUrlFromOrange(iconOrangeUrl)
   // 需要导出蓝色 PNG 文件时：URL 加 ?exportBlueIcon=1
@@ -658,6 +838,10 @@ onUnmounted(() => {
   if (clickHandler) {
     clickHandler.destroy()
     clickHandler = null
+  }
+  if (viewer && cameraMoveEndListener) {
+    viewer.camera.moveEnd.removeEventListener(cameraMoveEndListener)
+    cameraMoveEndListener = null
   }
   if (viewer) {
     if (typeof window !== 'undefined' && window.__airCesiumViewer === viewer) {
@@ -739,6 +923,7 @@ onUnmounted(() => {
   height: 100%;
   gap: 10px;
   align-items: flex-start;
+  overflow: hidden; /* 让内部滚动区生效 */
 }
 
 /* 有配图时：左图右文（接近设计稿） */
@@ -752,6 +937,8 @@ onUnmounted(() => {
   gap: 8px;
   flex: 0 0 120px;
   width: 120px;
+  height: 163px;
+  overflow: hidden;
 }
 
 .marker-popup-img {
@@ -767,9 +954,12 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
   width: 308px;
-  height: 163px;
+  height: 171px;
   overflow-y: auto;
   padding-right: 6px;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;            /* Firefox */
+  scrollbar-color: rgba(154, 183, 213, 0.9) rgba(255, 255, 255, 0.25);
 }
 
 .marker-popup-summary {
@@ -780,6 +970,24 @@ onUnmounted(() => {
   color: #515E70;
   line-height: 22px;
   text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* WebKit scrollbar（Chrome/Edge） */
+.marker-popup-text::-webkit-scrollbar {
+  width: 6px;
+}
+.marker-popup-text::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+}
+.marker-popup-text::-webkit-scrollbar-thumb {
+  background: rgba(154, 183, 213, 0.9);
+  border-radius: 6px;
+}
+.marker-popup-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(67, 152, 255, 0.95);
 }
 </style>
 
