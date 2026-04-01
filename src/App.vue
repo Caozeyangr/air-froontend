@@ -48,6 +48,7 @@
         <!-- 主内容区 -->
         <main class="app-main">
           <CesiumViewer />
+          <BeijingRadiationMap v-if="showEchartsMap" class="echarts-overlay" />
         </main>
 
         <!-- AI 聊天输入框 -->
@@ -63,6 +64,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import CesiumViewer from './components/CesiumViewer.vue'
+import BeijingRadiationMap from './components/BeijingRadiationMap.vue'
 import LeftPanel from './components/leftPanel/index.vue'
 import RightPanel from './components/rightPanel/index.vue'
 import AIChatInput from './components/AIChatInput.vue'
@@ -109,6 +111,12 @@ const stageStyle = computed(() => ({
   transform: `scale(${scaleRef.value})`,
   transformOrigin: 'top left',
 }))
+
+const showEchartsMap = computed(() => {
+  if (typeof window === 'undefined') return false
+  const params = new URLSearchParams(window.location.search || '')
+  return params.get('echartsMap') === '1'
+})
 </script>
 
 <style scoped>
@@ -174,5 +182,12 @@ const stageStyle = computed(() => ({
   right: 0;
   bottom: 0;
   z-index: 1;
+}
+
+.echarts-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none; /* 不挡住底层 Cesium 点击/拖拽 */
 }
 </style>
