@@ -47,7 +47,6 @@ const cesiumContainer = ref(null)
 let viewer = null
 let clickHandler = null
 let postRenderListener = null
-let cameraMoveEndListener = null
 
 const ORANGE = Cesium.Color.fromCssColorString('#FF9430')
 const BLUE = Cesium.Color.fromCssColorString('#165DFF')
@@ -749,34 +748,9 @@ onMounted(async () => {
   viewer.scene.screenSpaceCameraController.enableZoom = true
   viewer.scene.screenSpaceCameraController.enableTilt = false
   viewer.scene.screenSpaceCameraController.enableLook = false
-  // 避免缩得过小看到影像矩形外区域（可按视觉再微调）
-  viewer.scene.screenSpaceCameraController.maximumZoomDistance = 2900000
+  // 保持可拖拽，同时允许缩放到可见中国全图范围
+  viewer.scene.screenSpaceCameraController.maximumZoomDistance = 12000000
   viewer.scene.screenSpaceCameraController.minimumZoomDistance = 350000
-
-  const clampLonLatToImageryRect = () => {
-    if (!viewer) return
-    const c = viewer.camera.positionCartographic
-    if (!c) return
-    const lon = Cesium.Math.toDegrees(c.longitude)
-    const lat = Cesium.Math.toDegrees(c.latitude)
-    const clampedLon = Cesium.Math.clamp(
-      lon,
-      Cesium.Math.toDegrees(imageryRectangle.west),
-      Cesium.Math.toDegrees(imageryRectangle.east)
-    )
-    const clampedLat = Cesium.Math.clamp(
-      lat,
-      Cesium.Math.toDegrees(imageryRectangle.south),
-      Cesium.Math.toDegrees(imageryRectangle.north)
-    )
-    if (Math.abs(clampedLon - lon) > 1e-6 || Math.abs(clampedLat - lat) > 1e-6) {
-      viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(clampedLon, clampedLat, c.height)
-      })
-    }
-  }
-  cameraMoveEndListener = clampLonLatToImageryRect
-  viewer.camera.moveEnd.addEventListener(cameraMoveEndListener)
 
   const bayannurCoords = { lon: 107.386, lat: 40.751 }
   const bayannur3857 = toWebMercator(bayannurCoords.lon, bayannurCoords.lat)
@@ -838,10 +812,6 @@ onUnmounted(() => {
   if (clickHandler) {
     clickHandler.destroy()
     clickHandler = null
-  }
-  if (viewer && cameraMoveEndListener) {
-    viewer.camera.moveEnd.removeEventListener(cameraMoveEndListener)
-    cameraMoveEndListener = null
   }
   if (viewer) {
     if (typeof window !== 'undefined' && window.__airCesiumViewer === viewer) {
