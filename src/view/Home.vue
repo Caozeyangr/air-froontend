@@ -51,13 +51,29 @@ function updateStage() {
 
 onMounted(() => {
   updateStage()
+  getDashboardStats()
   window.addEventListener('resize', updateStage)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateStage)
 })
+const getDashboardStats = async () => {
+  // 大屏数据-统计信息接口
+  const token = localStorage.getItem('token')
+  const response = await fetch('https://ib.cangling.cn:22002/api/v1/ars/getDashboardStats', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'API-TOKEN': token
+    },
+  })
+  const result = await response.json()
 
+  if (result.success) {
+    console.log(result.data,'1111')
+  }
+}
 const stageStyle = computed(() => ({
   width: `${STAGE_W}px`,
   height: `${STAGE_H}px`,
