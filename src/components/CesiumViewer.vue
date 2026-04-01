@@ -592,6 +592,11 @@ onMounted(async () => {
   viewer.imageryLayers.removeAll()
   viewer.imageryLayers.addImageryProvider(styleBgImagery)
 
+  // 供叠加层（ECharts 等）获取屏幕坐标使用
+  if (typeof window !== 'undefined') {
+    window.__airCesiumViewer = viewer
+  }
+
   viewer.scene.screenSpaceCameraController.enableRotate = false
   viewer.scene.screenSpaceCameraController.enableTranslate = true
   viewer.scene.screenSpaceCameraController.enableZoom = true
@@ -655,6 +660,9 @@ onUnmounted(() => {
     clickHandler = null
   }
   if (viewer) {
+    if (typeof window !== 'undefined' && window.__airCesiumViewer === viewer) {
+      delete window.__airCesiumViewer
+    }
     viewer.destroy()
     viewer = null
   }

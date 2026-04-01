@@ -187,7 +187,8 @@ const showEchartsMap = computed(() => {
 .echarts-overlay {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  /* 高于 page-bg(9)，低于左右面板(50)/AI(200)/底部导航(1000) */
+  z-index: 20;
   pointer-events: none; /* 不挡住底层 Cesium 点击/拖拽 */
 }
 </style>
