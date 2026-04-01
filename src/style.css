@@ -44,3 +44,19 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+@font-face {
+  font-family: 'AlimamaShuHeiTi';
+  src: url('@/assets/fonts/AlimamaShuHeiTi-Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'PingFang SC';
+  src: url('@/assets/fonts/PingFangSC-Light.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: 'PingFang SC', sans-serif;
+}

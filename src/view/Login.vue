@@ -4,45 +4,32 @@
     <div class="login-form">
       <h2 class="login-title">欢迎登录</h2>
       <div class="input-group">
-        <div class="input-icon"><img
-            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2342ACFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"
-            alt="用户" /></div><input 
-            type="text" 
-            placeholder="请输入用户名" 
-            class="login-input"
-            :class="{ 'input-error': usernameError }"
-            v-model="username"
-            @blur="validateUsername"
-            @input="clearUsernameError"
-          />
-        <div v-if="usernameError" class="error-message">{{ usernameError }}</div>
+        <div class="input-icon">
+          <img :src="admin" alt="用户" />
+        </div>
+        <input type="text" placeholder="请输入用户名" class="login-input" :class="{ 'input-error': usernameError }"
+          v-model="username" @blur="validateUsername" @input="clearUsernameError" />
+        <!-- <div v-if="usernameError" class="error-message">{{ usernameError }}</div> -->
       </div>
       <div class="input-group">
-        <div class="input-icon"><img
-            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2342ACFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2' ry='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E"
-            alt="密码" /></div><input 
-            type="password" 
-            placeholder="请输入您的密码" 
-            class="login-input"
-            :class="{ 'input-error': passwordError }"
-            v-model="password"
-            @blur="validatePassword"
-            @input="clearPasswordError"
-          />
-        <div v-if="passwordError" class="error-message">{{ passwordError }}</div>
-      </div><button 
-        class="login-button" 
-        @click="handleLogin"
-        :disabled="isLoading"
-      >{{ isLoading ? '登录中...' : '登录' }}</button>
+        <div class="input-icon">
+          <img :src="paw" alt="密码" />
+        </div>
+        <input type="password" placeholder="请输入您的密码" class="login-input" :class="{ 'input-error': passwordError }"
+          v-model="password" @blur="validatePassword" @input="clearPasswordError" />
+        <!-- <div v-if="passwordError" class="error-message">{{ passwordError }}</div> -->
+      </div><button class="login-button" @click="handleLogin" :disabled="isLoading">{{ isLoading ? '登录中...' : '登录'
+      }}</button>
       <div v-if="globalError" class="global-error">{{ globalError }}</div>
     </div>
   </div>
 </template>
-<script setup>import { ref } from 'vue'
+<script setup>
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import loginBg from '../assets/login/登录背景.png'
-
+import admin from '../assets/login/用户.png'
+import paw from '../assets/login/密码.png'
 const router = useRouter()
 const route = useRoute()
 
@@ -52,6 +39,32 @@ const isLoading = ref(false)
 const usernameError = ref('')
 const passwordError = ref('')
 const globalError = ref('')
+
+// --- 加密算法实现 (从iframe中提取) ---
+/**
+ * @param {string} s 需要加密的字符串
+ * @param {number} salt 盐值 (byte)
+ */
+const encrypt = (s, salt) => {
+  // 将字符串转为字节数组 (UTF-8)
+  const encoder = new TextEncoder()
+  const bytes = encoder.encode(s)
+
+  let temp = ""
+  for (let i = 0; i < bytes.length; i++) {
+    // Java: bytes[i] ^ (byte)(salt + i)
+    // JS 中进行按位异或运算
+    let xored = bytes[i] ^ ((salt + i) & 0xFF)
+
+    // 转为 16 进制并补齐 2 位
+    let hex = (xored & 0xFF).toString(16)
+    if (hex.length === 1) {
+      hex = "0" + hex
+    }
+    temp += hex
+  }
+  return temp
+}
 
 // 用户名验证
 const validateUsername = () => {
@@ -107,26 +120,48 @@ const handleLogin = async () => {
   globalError.value = ''
 
   try {
-    // 模拟登录请求（实际项目中替换为真实API调用）
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 1. 执行加密 (使用与iframe相同的盐值)
+    const encryptedUser = encrypt(username.value, 0x23)
+    const encryptedPass = encrypt(password.value, 0x24)
 
-    // 简单的登录验证（实际项目中应使用后端验证）
-    if (username.value === 'admin' && password.value === '123456') {
-      // 登录成功，保存登录状态
+    // 2. 构造请求参数
+    const payload = {
+      "userName": encryptedUser,
+      "password": encryptedPass,
+      "code": "",
+      "uuid": "",
+      "loginType": "00",
+      "pageFrom": "localhost:90"
+    }
+
+    // 3. 发送 POST 请求到后端API
+    const response = await fetch('https://ib.cangling.cn:22002/api/v1/user/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      // 登录成功，保存登录状态和token
       localStorage.setItem('isLoggedIn', 'true')
       localStorage.setItem('username', username.value)
-      
+      localStorage.setItem('token', result.data.token)
+
       // 获取重定向路径，默认为home
       const redirectPath = route.query.redirect || '/home'
-      
+
       // 跳转到目标页面
       router.push(redirectPath)
     } else {
-      globalError.value = '用户名或密码错误'
+      globalError.value = '登录失败: ' + (result.msg || '用户名或密码错误')
     }
   } catch (error) {
     console.error('登录失败:', error)
-    globalError.value = '登录失败，请稍后重试'
+    globalError.value = '请求异常，请确保后端服务已启动'
   } finally {
     isLoading.value = false
   }
@@ -159,22 +194,19 @@ const handleLogin = async () => {
 
 .login-form {
   position: relative;
+  right: 100px;
   z-index: 2;
-  width: 400px;
+  width: 514px;
   padding: 40px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  margin-right: 100px;
+  font-family: AlimamaShuHeiTi;
 }
 
 .login-title {
   text-align: center;
-  color: #42ACFF;
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 30px;
+  color: #FFFFFF;
+  font-size: 32px;
+  font-family: AlimamaShuHeiTi;
+  margin-bottom: 54px;
 }
 
 .input-group {
@@ -188,32 +220,37 @@ const handleLogin = async () => {
   top: 50%;
   transform: translateY(-50%);
   z-index: 3;
+
+  img {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .login-input {
   width: 100%;
-  height: 48px;
-  padding: 0 15px 0 50px;
-  border: 1px solid #42ACFF;
+  height: 60px;
+  padding: 0 15px 0 60px;
+  border: 2px solid #FFFFFF;
   border-radius: 8px;
   font-size: 16px;
   color: #333;
-  background: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(180deg, #F0F8FF 0%, #FFFFFF 100%);
+  box-shadow: 0px 3px 10px 0px rgba(176, 199, 233, 0.3), 0px -6px 6px 0px rgba(255, 255, 255, 0.5);
   outline: none;
   transition: all 0.3s ease;
 }
 
 .login-input:focus {
-  border-color: #165DFF;
-  box-shadow: 0 0 0 2px rgba(66, 172, 255, 0.2);
+  background: linear-gradient( 180deg, #F0F8FF 0%, #FFFFFF 100%);
+  box-shadow: 0px 3px 10px 0px rgba(176,199,233,0.3);
+  border: 1px solid #1B73FF;
+  border-radius: 8px;
 }
 
 .login-input::placeholder {
   color: #999;
-}
-
-.login-input.input-error {
-  border-color: #ff4d4f;
+  border-radius: 8px;
 }
 
 .error-message {
@@ -232,16 +269,20 @@ const handleLogin = async () => {
 
 .login-button {
   width: 100%;
-  height: 48px;
-  background: linear-gradient(135deg, #42ACFF 0%, #165DFF 100%);
+  height: 60px;
+  background: linear-gradient(93deg, #0B88F9 0%, #34C8FF 100%);
+  box-shadow: 0px 10px 19px 0px rgba(0, 157, 255, 0.57);
+  border: 1px solid;
+  border-image: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.49)) 1 1;
+  border-radius: 36px;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  font-size: 22px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 10px;
+  font-family: PingFang SC;
 }
 
 .login-button:hover:not(:disabled) {
@@ -260,27 +301,4 @@ const handleLogin = async () => {
   opacity: 0.6;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .login-form {
-    width: 90%;
-    margin-right: 0;
-    margin-left: 0;
-    padding: 30px 20px;
-  }
-
-  .login-title {
-    font-size: 20px;
-  }
-
-  .login-input {
-    height: 44px;
-    font-size: 14px;
-  }
-
-  .login-button {
-    height: 44px;
-    font-size: 14px;
-  }
-}
 </style>
