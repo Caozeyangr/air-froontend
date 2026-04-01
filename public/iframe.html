@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>子页面 - 功能管理</title>
+    <style>
+        body { font-family: "Microsoft YaHei", sans-serif; background: #f8f9fa; padding: 20px; color: #333; }
+        .nav-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 30px; }
+        .nav-btn { 
+            padding: 15px 10px; background: #0078d4; color: white; border: none; 
+            border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s;
+        }
+        .nav-btn:hover { background: #005a9e; transform: translateY(-2px); }
+        
+        .login-card { 
+            background: white; padding: 20px; border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto;
+        }
+        .login-card h3 { margin-top: 0; color: #444; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .form-item { margin-bottom: 15px; }
+        .form-item label { display: block; margin-bottom: 5px; font-size: 13px; }
+        .form-item input { 
+            width: 100%; padding: 8px; border: 1px solid #ddd; 
+            border-radius: 4px; box-sizing: border-box; 
+        }
+        .login-btn { 
+            width: 100%; padding: 10px; background: #28a745; color: white; 
+            border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        .login-btn:hover { background: #218838; }
+        #status-msg { margin-top: 10px; font-size: 12px; text-align: center; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 导航按钮区 -->
+    <div class="nav-container">
+        <button class="nav-btn" onclick="handleSwitch('#734c29')">模型算法开发</button>
+        <button class="nav-btn" onclick="handleSwitch('#740ca3')">模型训练运行</button>
+        <button class="nav-btn" onclick="handleSwitch('#6fdfca')">模型库</button>
+        <button class="nav-btn" onclick="handleSwitch('#d4caff')">工作流构建</button>
+        <button class="nav-btn" onclick="handleSwitch('#85edb3')">样本制作管理</button>
+        <button class="nav-btn" onclick="handleSwitch('#22a9ee')">研究管理协同</button>
+    </div>
+
+    <!-- 2. 登录表单区 -->
+    <div class="login-card">
+        <h3>系统登录</h3>
+        <div class="form-item">
+            <label>用户名</label>
+            <input type="text" id="userName" value="admin">
+        </div>
+        <div class="form-item">
+            <label>密码</label>
+            <input type="password" id="password" value="123456">
+        </div>
+        <button class="login-btn" onclick="handleLogin()">登 录</button>
+        <div id="status-msg"></div>
+    </div>
+
+    <!-- 引入封装好的 JS -->
+    <script src="SafeMessenger.js"></script>
+
+    <script>
+        // 初始化 SafeMessenger
+        const messenger = new SafeMessenger({
+            targetWindow: window.parent,
+            targetOrigin: '*'
+        });
+
+        const statusMsg = document.getElementById('status-msg');
+
+        // --- 功能按钮逻辑 ---
+        function handleSwitch(name) {
+            messenger.send('IFRAME_SWITCH', name, (res) => {
+                console.log(`父页面已响应切换: ${name}`);
+            });
+        }
+
+        // --- 加密算法实现 (翻译自 Java) ---
+        /**
+         * @param {string} s 需要加密的字符串
+         * @param {number} salt 盐值 (byte)
+         */
+        function encrypt(s, salt) {
+            // 将字符串转为字节数组 (UTF-8)
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(s);
+            
+            let temp = "";
+            for (let i = 0; i < bytes.length; i++) {
+                // Java: bytes[i] ^ (byte)(salt + i)
+                // JS 中进行按位异或运算
+                let xored = bytes[i] ^ ((salt + i) & 0xFF);
+                
+                // 转为 16 进制并补齐 2 位
+                let hex = (xored & 0xFF).toString(16);
+                if (hex.length === 1) {
+                    hex = "0" + hex;
+                }
+                temp += hex;
+            }
+            return temp;
+        }
+
+        // --- 登录请求逻辑 ---
+        async function handleLogin() {
+            const userVal = document.getElementById('userName').value;
+            const passVal = document.getElementById('password').value;
+            
+            if (!userVal || !passVal) {
+                statusMsg.innerText = "请输入用户名和密码";
+                return;
+            }
+
+            // 1. 执行加密 (这里假设 salt 为 0，你可以根据 Java 逻辑修改 salt 值)
+            const salt = 0; 
+            const encryptedUser = encrypt(userVal, 0x23);
+            const encryptedPass = encrypt(passVal, 0x24);
+
+            statusMsg.style.color = "blue";
+            statusMsg.innerText = "正在尝试登录...";
+
+            // 2. 构造请求参数
+            const payload = {
+                "userName": encryptedUser,
+                "password": encryptedPass,
+                "code": "",
+                "uuid": "",
+                "loginType": "00",
+                "pageFrom": "localhost:90"
+            };
+
+            // 3. 发送 POST 请求
+            try {
+                const response = await fetch('http://localhost:90/api/v1/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusMsg.style.color = "green";
+                    statusMsg.innerText = "登录请求发送成功！";
+                    console.log("服务器返回:", result.data.token);
+                    messenger.send('IFRAME_LOGIN', result.data.token, (res) => {
+                        console.log(`父页面已响应登录: ${res}`);
+                    });
+                } else {
+                    statusMsg.style.color = "red";
+                    statusMsg.innerText = "登录失败: " + (result.msg || response.statusText);
+                }
+            } catch (error) {
+                statusMsg.style.color = "red";
+                statusMsg.innerText = "请求异常，请确保 localhost:90 服务已启动";
+                console.error("Fetch Error:", error);
+            }
+        }
+    </script>
+</body>
+</html>
