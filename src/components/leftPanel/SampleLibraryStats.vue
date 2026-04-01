@@ -46,13 +46,15 @@ onMounted(async () => {
 function getTagStyle(index) {
   const rows = 3
   const row = index % rows
-  const baseTop = 20 + row * 40
-  const baseDelay = index * 2
-  
+  // const baseTop = 20 + row * 40
+  // const baseDelay = index * 2
+  const baseTop = 12 + row * 21
+  const baseDelay = index * 1.5
   return {
     top: `${baseTop}px`,
     animationDelay: `${baseDelay}s`,
-    animationDuration: `${15 + Math.random() * 5}s`
+    // animationDuration: `${15 + Math.random() * 5}s`
+    animationDuration: `${20 + Math.random() * 5}s`
   }
 }
 </script>
@@ -63,6 +65,7 @@ function getTagStyle(index) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 388px;
 }
 
 /* 标题栏 */
@@ -72,9 +75,11 @@ function getTagStyle(index) {
   padding: 0 16px;
   background: linear-gradient(90deg, #42ACFF 0%, rgba(211,235,255,0) 100%);
   text-align: left;
-  margin-bottom: 8px;
+  /* margin-bottom: 8px; */
+  margin-bottom: 0;
   display: flex;
   align-items: center;
+  /* outline: 2px solid red; */
 }
 
 .title-text {
@@ -88,32 +93,57 @@ function getTagStyle(index) {
 .danmaku-container {
   position: relative;
   width: 100%;
-  height: 140px;
+  height: 83px;
+  /* height: 100%; */
   overflow: hidden;
-  margin-bottom: 8px;
+  /* margin-bottom: 8px; */
+  margin-bottom: 0;
+  z-index: 1;
 }
 
 /* 弹幕词条 */
 .danmaku-tag {
   position: absolute;
   left: 100%;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(24, 144, 255, 0.3);
-  border-radius: 20px;
+  right: auto;
+  /* 高度 24px，左右内边距用于适配不同文字长度 */
+  height: 24px;
+  padding: 2px 12px;
+  /* 右实左虚：右侧不透明，向左逐渐透明，只保留右侧圆角 */
+  background: linear-gradient(270deg, #E2F3FF 0%, rgba(226, 243, 255, 0) 100%);
+  border-radius: 0 12px 12px 0;
+  /* 用伪元素做渐变描边，避免 border-image 导致圆角失效 */
+  border: 0;
+  overflow: hidden;
+  isolation: isolate;
   font-size: 13px;
-  color: #1890ff;
+  color: #3F73B1;
   white-space: nowrap;
   animation: danmakuMove linear infinite;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+  box-shadow: none;
+}
+
+.danmaku-tag::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px; /* 描边粗细 */
+  background: linear-gradient(270deg, rgba(93, 176, 255, 1) 0%, rgba(210, 234, 252, 0) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
 }
 
 @keyframes danmakuMove {
   0% {
-    transform: translateX(0);
+    left: 100%;
   }
   100% {
-    transform: translateX(calc(-100% - 300px));
+    left: calc(-100% - 10px);
   }
 }
 

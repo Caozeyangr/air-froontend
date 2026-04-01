@@ -68,8 +68,12 @@ function getPie3D(pieData) {
     sumValue += pieData[i].value
   }
 
-  const thickness = 0.3 // 饼图厚度
-  const innerRadius = 0.3 // 内圈半径（圆孔大小）
+  // 甜甜圈 3D 饼图：中间镂空，两边实心；高度随数值差异化
+  const innerRadius = 0.48 // 内孔半径加大一点，让中间空心更明显
+  // “扁平”效果：整体厚度更薄
+  const minHeight = 0.12
+  const maxHeight = 0.22
+  const maxValue = Math.max(...pieData.map(d => d.value))
 
   for (let i = 0; i < pieData.length; i++) {
     const item = pieData[i]
@@ -78,6 +82,15 @@ function getPie3D(pieData) {
     const endRatio = endValue / sumValue
     const startRadian = startRatio * Math.PI * 2
     const endRadian = endRatio * Math.PI * 2
+    const midRadian = (startRadian + endRadian) / 2
+    const offsetX = 0 // 无间隔：不爆炸
+    const offsetY = 0
+
+    const thickness = minHeight + ((item.value / maxValue) * (maxHeight - minHeight))
+
+    // 颜色：顶面更亮，侧面更暗，营造“高光+渐变”科技感
+    const topColor = item.itemStyle?.topColor || item.itemStyle?.color
+    const sideColor = item.itemStyle?.sideColor || item.itemStyle?.color
 
     // 1. 顶面（上表面）
     series.push({
@@ -86,14 +99,15 @@ function getPie3D(pieData) {
       parametric: true,
       wireframe: { show: false },
       itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 1
+        color: topColor,
+        opacity: 1,
       },
       parametricEquation: {
         u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
-        x: function (u, v) { return Math.cos(u) * v },
-        y: function (u, v) { return Math.sin(u) * v },
+        // v 从 innerRadius 开始，中心会形成镂空
+        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
+        x: function (u, v) { return Math.cos(u) * v + offsetX },
+        y: function (u, v) { return Math.sin(u) * v + offsetY },
         z: function (u, v) { return thickness }
       }
     })
@@ -105,14 +119,14 @@ function getPie3D(pieData) {
       parametric: true,
       wireframe: { show: false },
       itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 1
+        color: sideColor,
+        opacity: 0.95
       },
       parametricEquation: {
         u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
-        x: function (u, v) { return Math.cos(u) * v },
-        y: function (u, v) { return Math.sin(u) * v },
+        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
+        x: function (u, v) { return Math.cos(u) * v + offsetX },
+        y: function (u, v) { return Math.sin(u) * v + offsetY },
         z: function (u, v) { return 0 }
       }
     })
@@ -124,38 +138,38 @@ function getPie3D(pieData) {
       parametric: true,
       wireframe: { show: false },
       itemStyle: {
-        color: item.itemStyle.color,
+        color: sideColor,
         opacity: 0.9
       },
       parametricEquation: {
         u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
         v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(u) },
-        y: function (u, v) { return Math.sin(u) },
+        x: function (u, v) { return Math.cos(u) + offsetX },
+        y: function (u, v) { return Math.sin(u) + offsetY },
         z: function (u, v) { return v }
       }
     })
 
-    // 4. 内侧面（内孔侧面）
+    // 4. 内侧面（内孔边界：保证“中间镂空，两边实心”）
     series.push({
       name: item.name + '_inner',
       type: 'surface',
       parametric: true,
       wireframe: { show: false },
       itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.8
+        color: sideColor,
+        opacity: 0.86
       },
       parametricEquation: {
         u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
         v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(u) * innerRadius },
-        y: function (u, v) { return Math.sin(u) * innerRadius },
+        x: function (u, v) { return Math.cos(u) * innerRadius + offsetX },
+        y: function (u, v) { return Math.sin(u) * innerRadius + offsetY },
         z: function (u, v) { return v }
       }
     })
 
-    // 5. 起始侧面（径向平面）
+    // 5. 起始侧面（径向平面：范围从内半径到外半径）
     series.push({
       name: item.name + '_start',
       type: 'surface',
@@ -166,15 +180,15 @@ function getPie3D(pieData) {
         opacity: 0.95
       },
       parametricEquation: {
-        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
+        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
         v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(startRadian) * u },
-        y: function (u, v) { return Math.sin(startRadian) * u },
+        x: function (u, v) { return Math.cos(startRadian) * u + offsetX },
+        y: function (u, v) { return Math.sin(startRadian) * u + offsetY },
         z: function (u, v) { return v }
       }
     })
 
-    // 6. 结束侧面（径向平面）
+    // 6. 结束侧面（径向平面：范围从内半径到外半径）
     series.push({
       name: item.name + '_end',
       type: 'surface',
@@ -185,10 +199,10 @@ function getPie3D(pieData) {
         opacity: 0.95
       },
       parametricEquation: {
-        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
+        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
         v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(endRadian) * u },
-        y: function (u, v) { return Math.sin(endRadian) * u },
+        x: function (u, v) { return Math.cos(endRadian) * u + offsetX },
+        y: function (u, v) { return Math.sin(endRadian) * u + offsetY },
         z: function (u, v) { return v }
       }
     })
@@ -203,64 +217,164 @@ function initChart() {
   chart = echarts.init(chartRef.value)
 
   const pieData = [
-    { value: 15, name: '语义分割', itemStyle: { color: '#42ACFF' } },
-    { value: 9, name: '目标检测', itemStyle: { color: '#52C41A' } },
-    { value: 2, name: '参数反演', itemStyle: { color: '#FAAD14' } }
+    {
+      value: 15,
+      name: '语义分割',
+      itemStyle: { color: '#42ACFF', topColor: '#56C2FF', sideColor: '#2F6BFF' },
+    }, // 蓝（高光+宝蓝）
+    {
+      value: 9,
+      name: '目标检测',
+      itemStyle: { color: '#F5B83A', topColor: '#FFD46B', sideColor: '#F08A1A' },
+    }, // 黄橙（高光+橙）
+    {
+      value: 2,
+      name: '参数反演',
+      itemStyle: { color: '#22D3A6', topColor: '#36F0D0', sideColor: '#14B89D' },
+    }, // 青绿（高光+薄荷）
   ]
 
   const series = getPie3D(pieData)
 
-  // 添加标签显示
+  // 外侧标注：分类名 + 数值分开展示；引导线统一浅灰；文字颜色跟随扇区
   pieData.forEach((item, index) => {
     const startRadian = (pieData.slice(0, index).reduce((sum, d) => sum + d.value, 0) / pieData.reduce((sum, d) => sum + d.value, 0)) * Math.PI * 2
     const endRadian = ((pieData.slice(0, index + 1).reduce((sum, d) => sum + d.value, 0)) / pieData.reduce((sum, d) => sum + d.value, 0)) * Math.PI * 2
     const midRadian = (startRadian + endRadian) / 2
-    const radius = 0.85
-    const x = Math.cos(midRadian) * radius
-    const y = Math.sin(midRadian) * radius
 
+    // 与饼图顶面高度一致：把引导线从“饼图上方”开始
+    const minHeight = 0.12
+    const maxHeight = 0.22
+    const maxValue = Math.max(...pieData.map(d => d.value))
+    const thickness = minHeight + ((item.value / maxValue) * (maxHeight - minHeight))
+    const topZ = thickness + 0.03
+    // A：折点必须落在 midRadian 的径向射线上（x=cos(mid)*r, y=sin(mid)*r）
+    // 左边：水平->沿径向斜向下入饼图；右边：沿径向斜向上出饼图->水平
+    // 控制水平引导线的外侧长度（数值越大，水平线越长）
+    const xOuterAbs = 2.35
+    const rEdge = 1.02
+    const sign = Math.cos(midRadian) >= 0 ? 1 : -1
+    const cosMid = Math.cos(midRadian)
+    const sinMid = Math.sin(midRadian)
+
+    const xEdge = cosMid * rEdge
+    const yEdge = sinMid * rEdge
+    const length1 = 0.18 // 短斜段长度（决定折点距外缘的距离）
+    const rBend = rEdge + length1
+    const xBend = cosMid * rBend
+    const yBend = sinMid * rBend
+
+    const xEnd = sign * xOuterAbs
+    const yEnd = yBend
+    const zPie = topZ + 0.01
+    const zBend = topZ + 0.04
+
+    // 引导线（下层）
+    series.push({
+      name: item.name + '_line',
+      type: 'line3D',
+      // 左边：水平段 -> 斜向下插入饼图
+      // 右边：斜向上从饼图 -> 水平段
+      data: sign < 0
+        ? [[xEnd, yEnd, zBend], [xBend, yEnd, zBend], [xEdge, yEdge, zPie]]
+        : [[xEdge, yEdge, zPie], [xBend, yEnd, zBend], [xEnd, yEnd, zBend]],
+      lineStyle: {
+        width: 1.0,
+        color: '#75ACD7',
+        opacity: 1,
+      },
+      silent: true,
+    })
+
+    // 统一单标签：避免“数字标签 + 文字标签”在同一水平线重叠
+    // 右侧：数字在前（9 目标检测）；左侧：文字在前（语义分割 15）
     series.push({
       name: item.name + '_label',
       type: 'scatter3D',
       symbolSize: 0,
-      itemStyle: {
-        color: item.itemStyle.color
-      },
-      data: [[x, y, 0.25]],
+      itemStyle: { color: item.itemStyle.color },
+      data: [[xEnd, yEnd, 0.30]],
       label: {
         show: true,
-        formatter: `${item.name} {value|${item.value}}`,
+        formatter: () => sign > 0
+          ? `{value|${item.value}} {name|${item.name}}`
+          : `{name|${item.name}} {value|${item.value}}`,
         rich: {
           value: {
-            fontSize: 16,
+            width: 10,
+            height: 24,
+            fontFamily: 'DINAlternate, DINAlternate',
+            fontSize: 20,
             fontWeight: 'bold',
-            color: item.itemStyle.color
+            color: item.itemStyle.color,
+            lineHeight: 24,
+            align: sign > 0 ? 'left' : 'right',
+          },
+          name: {
+            width: 56,
+            height: 20,
+            fontFamily: 'SourceHanSansCN, SourceHanSansCN',
+            fontSize: 14,
+            fontWeight: 500,
+            color: item.itemStyle.color,
+            lineHeight: 20,
+            align: sign > 0 ? 'right' : 'left',
           }
         },
-        fontSize: 14,
-        color: '#fff',
-        position: 'right',
-        distance: 20
+        color: item.itemStyle.color,
+        align: sign > 0 ? 'right' : 'left',
+        verticalAlign: 'middle',
+        distance: 0,
+        padding: [0, 0, 0, 0],
       }
     })
   })
 
-  // 添加底部环形装饰
+  // 悬浮平台：多层同心蓝色“水波纹”环（同心圆+轻微波纹），叠加形成悬浮感
+  ;[
+    { name: 'ripple_1', r0: 1.08, r1: 1.18, baseZ: -0.10, waveAmp: 0.018, freq: 10, color: '#56B7FF', opacity: 0.16 },
+    { name: 'ripple_2', r0: 1.20, r1: 1.30, baseZ: -0.12, waveAmp: 0.015, freq: 12, color: '#56B7FF', opacity: 0.10 },
+    { name: 'ripple_3', r0: 1.34, r1: 1.44, baseZ: -0.14, waveAmp: 0.012, freq: 14, color: '#82CBFF', opacity: 0.07 },
+    { name: 'ripple_4', r0: 1.50, r1: 1.60, baseZ: -0.16, waveAmp: 0.010, freq: 16, color: '#B5E5FF', opacity: 0.05 },
+  ].forEach(r => {
+    series.push({
+      name: r.name,
+      type: 'surface',
+      parametric: true,
+      wireframe: { show: false },
+      itemStyle: { color: r.color, opacity: r.opacity },
+      parametricEquation: {
+        u: { min: 0, max: Math.PI * 2, step: Math.PI / 72 },
+        v: { min: r.r0, max: r.r1, step: 0.02 },
+        x: function (u, v) { return Math.cos(u) * v },
+        y: function (u, v) { return Math.sin(u) * v },
+        z: function (u, v) {
+          // 轻微波纹：让同心环看起来“在发光并有水波纹理”
+          return r.baseZ + r.waveAmp * Math.sin(u * r.freq + v * 2.2)
+        }
+      }
+    })
+  })
+
+  // 科技网格盘（更下层，wireframe 形成网格感）
   series.push({
-    name: 'ring',
+    name: 'platform_grid',
     type: 'surface',
     parametric: true,
-    wireframe: { show: false },
-    itemStyle: {
-      color: '#42ACFF',
-      opacity: 0.1
+    wireframe: {
+      show: true,
+      lineStyle: {
+        color: 'rgba(86, 183, 255, 0.22)',
+        width: 1,
+      }
     },
+    itemStyle: { color: '#56B7FF', opacity: 0.025 },
     parametricEquation: {
-      u: { min: 0, max: Math.PI * 2, step: Math.PI / 40 },
-      v: { min: 1.1, max: 1.3, step: 0.05 },
+      u: { min: 0, max: Math.PI * 2, step: Math.PI / 60 },
+      v: { min: 0, max: 1.95, step: 0.06 },
       x: function (u, v) { return Math.cos(u) * v },
       y: function (u, v) { return Math.sin(u) * v },
-      z: function (u, v) { return -0.05 }
+      z: function () { return -0.18 }
     }
   })
 
@@ -289,13 +403,21 @@ function initChart() {
     },
     grid3D: {
       show: false,
-      boxHeight: 40,
+      boxHeight: 52,
       viewControl: {
-        alpha: 35,
-        beta: 25,
-        distance: 220,
-        autoRotate: true,
-        autoRotateSpeed: 6
+        // 更平一些的俯视：角度从 45° 调整到 30°
+        alpha: 30,       // 0 是侧视，90 是正上方，这里取 30° 更接近平视
+        beta: 0,
+        distance: 190,   // 再拉近一点，让饼图整体更大
+        minAlpha: 30,
+        maxAlpha: 30,
+        minBeta: 0,
+        maxBeta: 0,
+        animation: false,
+        autoRotate: false,
+        zoomSensitivity: 0,
+        rotateSensitivity: 0,
+        panSensitivity: 0,
       },
       light: {
         main: {
@@ -339,12 +461,13 @@ onBeforeUnmount(() => {
 .title-bar {
   width: 100%;
   height: 32px;
-  padding: 0 16px;
-  background: linear-gradient(90deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
-  text-align: left;
-  margin-bottom: 12px;
+  padding: 0 12px 0 16px;
+  background: linear-gradient(270deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
+  text-align: right;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .title-text {
@@ -357,21 +480,21 @@ onBeforeUnmount(() => {
 /* 图表容器 */
 .chart-container {
   width: 100%;
-  height: 240px;
-  margin-bottom: 12px;
+  height: 220px;
+  margin-bottom: 8px;
 }
 
 /* 分类列表 */
 .category-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 8px;
+  gap: 10px;
+  padding: 0 4px;
 }
 
 .category-item {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -379,6 +502,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .category-dot {
@@ -389,25 +513,26 @@ onBeforeUnmount(() => {
 
 .category-name {
   font-size: 14px;
-  color: #C0E8FF;
+  color: #536d82;
   font-weight: 500;
 }
 
-/* 标签列表 */
 .tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding-left: 18px;
+  gap: 4px;
+  padding-left: 0;
 }
 
 .tag {
-  padding: 4px 12px;
-  background: rgba(66, 172, 255, 0.15);
-  border: 1px solid rgba(66, 172, 255, 0.3);
-  border-radius: 4px;
-  font-size: 12px;
-  color: #C0E8FF;
+  height: 18px;
+  padding: 0 8px;
+  background: #7faccd;
+  border: 0;
+  border-radius: 2px;
+  font-size: 13px;
+  line-height: 18px;
+  color: #fff;
   white-space: nowrap;
 }
 </style>

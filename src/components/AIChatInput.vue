@@ -99,13 +99,14 @@ function handleSearch() {
 
 <style scoped>
 .ai-chat-container {
-  position: fixed;
+  /* position: fixed; */
+  position: absolute;
   top: 100px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 4px;
   z-index: 200;
 }
 
@@ -122,7 +123,8 @@ function handleSearch() {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 600px;
+  /* width: 600px; */
+  width: 503px;
 }
 
 /* 输入框 */
@@ -130,11 +132,16 @@ function handleSearch() {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid #42ACFF;
-  border-radius: 30px;
-  box-shadow: 0 4px 20px rgba(66, 172, 255, 0.3);
+  width: 503px;
+  height: 36px;
+  padding: 0 6px 0 12px;
+  box-sizing: border-box;
+  background: linear-gradient(275deg, #E8F1FF 0%, rgba(255, 255, 255, 0.76) 100%);
+  box-shadow: inset 0px 1px 4px 0px rgba(0, 190, 255, 0.59);
+  border-radius: 18px;
+  border: none;
+  opacity: 0.8;
+  border-image: none;
 }
 
 .add-icon {
@@ -190,16 +197,31 @@ function handleSearch() {
 
 .chat-input {
   flex: 1;
+  width: 167px;
+  height: 20px;
   border: none;
   outline: none;
   background: transparent;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
   font-size: 14px;
-  color: #333;
+  color: #B8BCC1;
+  line-height: 20px;
+  text-align: left;
+  font-style: normal;
   min-width: 120px;
 }
 
 .chat-input::placeholder {
-  color: #999;
+  width: 167px;
+  height: 20px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 14px;
+  color: #B8BCC1;
+  line-height: 20px;
+  text-align: left;
+  font-style: normal;
 }
 
 .search-icon {
@@ -207,6 +229,7 @@ function handleSearch() {
   height: 36px;
   cursor: pointer;
   flex-shrink: 0;
+  margin-right: 0;
 }
 
 /* 快捷词条 */

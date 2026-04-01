@@ -2,10 +2,12 @@
   <div class="bottom-navigation">
     <div class="navigation-container">
       <div v-for="item in navigationItems" :key="item.id" class="nav-item">
-        <div class="icon-container">
-          <img :src="item.icon" :alt="item.label" class="nav-icon" />
+        <div
+          class="icon-container"
+          :style="{ backgroundImage: `url(${item.icon})` }"
+        >
+          <div class="nav-label">{{ item.label }}</div>
         </div>
-        <div class="nav-label">{{ item.label }}</div>
       </div>
     </div>
   </div>
@@ -54,29 +56,40 @@ const navigationItems = ref([
 </script>
 <style scoped>
 .bottom-navigation {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  /* position: fixed; */
+  position: absolute;
+  /* bottom: 0; */
+  /* left: 0;
+  right: 0; */
   z-index: 1000;
-  padding: 20px 0;
+  /* padding: 20px 0; */
+  top: 802px; 
+  left: 4px; 
+  right: 0; 
+  padding: 0;
+  width: 1919px;
+  height: 51px;
+  bottom: auto;
 }
 
 .navigation-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 60px;
-  max-width: 1200px;
+  /* 设计稿要求相邻框间距约 41px */
+  gap: 41px;
+  width: auto;
+  height: 100%;
   margin: 0 auto;
-  padding: 0 20px;
+  /* margin: 0 auto;
+  padding: 0 20px; */
+  /* margin: 0; */
+  padding: 0;
 }
 
 .nav-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -86,32 +99,33 @@ const navigationItems = ref([
 }
 
 .icon-container {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(22, 93, 255, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(22, 93, 255, 0.3);
-}
-
-.nav-icon {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
+  position: relative;
+  width: 129px;
+  height: 102px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .nav-label {
-  font-size: 14px;
-  color: #ffffff;
-  font-weight: 500;
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  width: 108px;
+  height: 25px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 600;
+  font-size: 18px;
+  color: #2AADFF;
+  line-height: 25px;
   text-align: center;
+  font-style: normal;
   white-space: nowrap;
 }
 
 /* 响应式设计 */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
   .navigation-container {
     gap: 40px;
   }
@@ -129,9 +143,9 @@ const navigationItems = ref([
   .nav-label {
     font-size: 12px;
   }
-}
+} */
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .navigation-container {
     gap: 20px;
     padding: 0 10px;
@@ -150,9 +164,9 @@ const navigationItems = ref([
   .nav-label {
     font-size: 11px;
   }
-}
+} */
 
-@media (max-width: 480px) {
+/* @media (max-width: 480px) {
   .navigation-container {
     gap: 15px;
     flex-wrap: wrap;
@@ -176,5 +190,5 @@ const navigationItems = ref([
   .nav-label {
     font-size: 10px;
   }
-}
+} */
 </style>

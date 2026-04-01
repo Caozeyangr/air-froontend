@@ -256,7 +256,7 @@ function addMarkers3857() {
 <style scoped>
 .cesium-container {
   width: 100%;
-  height: 100vh; /* 改为全屏高度，避免容器高度为0 */
+  height: 100%; /* height: 100vh;改为全屏高度，避免容器高度为0 */
   background: #f5f7fa;
   position: relative;
   z-index: 1;

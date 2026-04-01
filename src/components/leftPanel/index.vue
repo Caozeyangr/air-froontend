@@ -16,9 +16,12 @@ import HardwareStats from './HardwareStats.vue'
 
 <style scoped>
 .left-panel {
-  position: fixed;
-  top: 100px;
-  left: 22px;
+  /* position: fixed; */
+  position: absolute;
+  /* top: 100px;
+  left: 22px; */
+  top: 119px; 
+  left: 26px;
   bottom: 0;
   z-index: 50;
   display: flex;

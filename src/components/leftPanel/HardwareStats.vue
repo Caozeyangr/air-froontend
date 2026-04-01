@@ -12,7 +12,8 @@
         :key="item.label"
         class="stat-card"
       >
-        <img :src="item.icon" :alt="item.label" class="stat-icon" />
+        <!-- 用 icon png 作为“整张卡片背景”铺满 -->
+        <img :src="item.icon" alt="" class="stat-bg" />
         <div class="stat-info">
           <span class="stat-label">{{ item.label }}</span>
           <div class="stat-value">
@@ -47,13 +48,14 @@ const statsData = [
 
 /* 标题栏 - 与智能解译样本库统计保持一致 */
 .title-bar {
+  display: none;
   width: 388px;
   height: 32px;
   padding: 0 16px;
   background: linear-gradient(90deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
   text-align: left;
   margin-bottom: 12px;
-  display: flex;
+  /* display: flex; */
   align-items: center;
 }
 
@@ -74,47 +76,76 @@ const statsData = [
 
 /* 统计卡片 */
 .stat-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 12px;
-  background: rgba(66, 172, 255, 0.1);
-  border: 1px dashed rgba(66, 172, 255, 0.3);
-  border-radius: 4px;
+  background: rgba(66, 172, 255, 0.06);
+  border: 1px solid rgba(66, 172, 255, 0.22); /* 去掉虚线边框 */
+  border-radius: 2px;
+  box-sizing: border-box;
+  overflow: hidden; /* 裁剪背景铺满时的圆角 */
 }
 
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
+.stat-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill; /* “铺满”要求拉伸充满整个卡片框 */
+  z-index: 0;
 }
 
 .stat-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+  /* 图标在背景左侧，给文字留出原来图标宽度+间距位置 */
+  padding-left: 62px;
 }
 
 .stat-label {
+  width: 56px;
+  height: 20px;
+  font-family: SourceHanSansCN, SourceHanSansCN;
+  font-weight: 400;
   font-size: 14px;
-  color: #C0E8FF;
+  color: #3F73B1;
+  line-height: 20px;
+  text-align: left;
+  font-style: normal;
+  white-space: nowrap;
 }
 
 .stat-value {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 2px;
+  height: 28px; /* 对齐下面数字的高度 */
 }
 
 .stat-number {
-  font-size: 28px;
-  font-weight: bold;
-  color: #42ACFF;
-  line-height: 1;
+  width: 12px;
+  height: 28px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 500;
+  font-size: 20px;
+  color: #269EF5;
+  line-height: 28px;
+  text-align: left;
+  font-style: normal;
 }
 
 .stat-unit {
-  font-size: 14px;
-  color: #42ACFF;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 500;
+  font-size: 20px;
+  color: #269EF5;
+  line-height: 28px;
+  text-align: left;
+  font-style: normal;
 }
 </style>

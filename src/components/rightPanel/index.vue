@@ -14,9 +14,12 @@ import WorkFlowStats from './WorkFlowStats.vue'
 
 <style scoped>
 .right-panel {
-  position: fixed;
-  top: 100px;
-  right: 22px;
+  /* position: fixed; */
+  position: absolute;
+  /* top: 100px;
+  right: 22px; */
+  top: 119px;
+  right: 18px;
   bottom: 0;
   z-index: 50;
   display: flex;

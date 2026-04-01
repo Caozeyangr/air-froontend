@@ -36,193 +36,157 @@ const workflowData = [
   { name: '其他分类工作流', value: 5, color: '#FAAD14' }
 ]
 
-// 获取3D饼图数据 - 生成顶面、底面和侧面（带厚度）
-function getPie3D(pieData) {
-  const series = []
-  let sumValue = 0
-  let startValue = 0
-  let endValue = 0
-
-  for (let i = 0; i < pieData.length; i++) {
-    sumValue += pieData[i].value
-  }
-
-  const thickness = 0.25
-  const innerRadius = 0.35
-
-  for (let i = 0; i < pieData.length; i++) {
-    const item = pieData[i]
-    endValue = startValue + item.value
-    const startRatio = startValue / sumValue
-    const endRatio = endValue / sumValue
-    const startRadian = startRatio * Math.PI * 2
-    const endRadian = endRatio * Math.PI * 2
-
-    // 1. 顶面
-    series.push({
-      name: item.name,
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 1
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
-        x: function (u, v) { return Math.cos(u) * v },
-        y: function (u, v) { return Math.sin(u) * v },
-        z: function (u, v) { return thickness }
-      }
-    })
-
-    // 2. 底面
-    series.push({
-      name: item.name + '_bottom',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 1
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
-        x: function (u, v) { return Math.cos(u) * v },
-        y: function (u, v) { return Math.sin(u) * v },
-        z: function (u, v) { return 0 }
-      }
-    })
-
-    // 3. 外侧面
-    series.push({
-      name: item.name + '_outer',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.9
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(u) },
-        y: function (u, v) { return Math.sin(u) },
-        z: function (u, v) { return v }
-      }
-    })
-
-    // 4. 内侧面
-    series.push({
-      name: item.name + '_inner',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.8
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(u) * innerRadius },
-        y: function (u, v) { return Math.sin(u) * innerRadius },
-        z: function (u, v) { return v }
-      }
-    })
-
-    // 5. 起始侧面
-    series.push({
-      name: item.name + '_start',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.95
-      },
-      parametricEquation: {
-        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(startRadian) * u },
-        y: function (u, v) { return Math.sin(startRadian) * u },
-        z: function (u, v) { return v }
-      }
-    })
-
-    // 6. 结束侧面
-    series.push({
-      name: item.name + '_end',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.95
-      },
-      parametricEquation: {
-        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 10 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(endRadian) * u },
-        y: function (u, v) { return Math.sin(endRadian) * u },
-        z: function (u, v) { return v }
-      }
-    })
-
-    startValue = endValue
-  }
-
-  return series
-}
-
 function initChart() {
   chart = echarts.init(chartRef.value)
 
-  const pieData = workflowData.map(item => ({
-    value: item.value,
-    name: item.name,
-    itemStyle: { color: item.color }
-  }))
-
-  const series = getPie3D(pieData)
+  const data = workflowData
+  // 仅用于视觉占比/角度，不影响右侧列表显示值
+  const visualValues = [7, 5, 1, 2]
+  const gradients = [
+    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+      { offset: 0, color: '#6FD3FF' },
+      { offset: 1, color: '#208BFF' }
+    ]),
+    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+      { offset: 0, color: '#B5FFF4' },
+      { offset: 1, color: '#1BC9B1' }
+    ]),
+    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+      { offset: 0, color: '#C6F6B0' },
+      { offset: 1, color: '#52C41A' }
+    ]),
+    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+      { offset: 0, color: '#FFE9A6' },
+      { offset: 1, color: '#FFB52C' }
+    ])
+  ]
+  const makeSingleSliceSeries = (sliceIndex, outerRadius) => ({
+    name: `workflow-main-${sliceIndex}`,
+    type: 'pie',
+    radius: ['24%', outerRadius],
+    center: ['50%', '52%'],
+    clockwise: true,
+    startAngle: 220,
+    avoidLabelOverlap: false,
+    label: { show: false },
+    labelLine: { show: false },
+    itemStyle: {
+      shadowColor: 'rgba(0, 0, 0, 0.15)',
+      shadowBlur: 12,
+      shadowOffsetY: 4
+    },
+    data: data.map((item, i) => ({
+      name: item.name,
+      value: visualValues[i],
+      itemStyle: i === sliceIndex
+        ? { color: gradients[i] }
+        : { color: 'rgba(0,0,0,0)' }
+    }))
+  })
 
   const option = {
     backgroundColor: 'transparent',
     tooltip: {
       show: true,
       formatter: (params) => {
-        if (params.seriesName && !params.seriesName.includes('_')) {
-          return `${params.seriesName}<br/><span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:${params.color};"></span>${workflowData.find(item => item.name === params.seriesName)?.value}类`
+        if (params.seriesType === 'pie' && params.data && params.data.name) {
+          const item = data.find(d => d.name === params.data.name)
+          return `${params.data.name}<br/>
+            <span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:${params.color};"></span>
+            ${item ? item.value : params.data.value}类`
         }
       }
     },
-    xAxis3D: {
-      min: -1,
-      max: 1
-    },
-    yAxis3D: {
-      min: -1,
-      max: 1
-    },
-    zAxis3D: {
-      min: -1,
-      max: 1
-    },
-    grid3D: {
-      show: false,
-      boxHeight: 20,
-      viewControl: {
-        alpha: 35,
-        beta: 30,
-        distance: 220,
-        autoRotate: true,
-        autoRotateSpeed: 8
+    series: [
+      // 按扇区单独控制半径：黄色、绿色在圆内收缩（半径更小）
+      makeSingleSliceSeries(0, '62%'), // 蓝色
+      makeSingleSliceSeries(1, '62%'), // 青色
+      makeSingleSliceSeries(2, '50%'), // 绿色（最小半径）
+      makeSingleSliceSeries(3, '54%'), // 黄色（比绿色稍大）
+      {
+        // 中心蓝色小圈：空心，圈宽≈内空白半径
+        name: 'center-ring',
+        type: 'pie',
+        radius: ['9%', '24%'],
+        center: ['50%', '52%'],
+        silent: true,
+        z: 3,
+        label: { show: false },
+        labelLine: { show: false },
+        data: [
+          {
+            value: 1,
+            itemStyle: {
+              color: new echarts.graphic.RadialGradient(0.5, 0.35, 0.7, [
+                { offset: 0, color: '#FFFFFF' },
+                { offset: 0.6, color: '#60CCFF' },
+                { offset: 1, color: '#1E8BFF' }
+              ])
+            }
+          }
+        ]
+      },
+      // 蓝色扇区外扩一圈：让蓝色超出当前圆
+      {
+        name: 'workflow-blue-extend',
+        type: 'pie',
+        // 让蓝色区域明显超出外圈边框：外半径略大于 outer-ring 的 71%
+        radius: ['62%', '78%'],
+        center: ['50%', '52%'],
+        clockwise: true,
+        startAngle: 220,
+        silent: true,
+        z: 2,
+        label: { show: false },
+        labelLine: { show: false },
+        data: [
+          {
+            name: '智能解译工作流',
+            // 与主扇区相同的数值，保证角度一致
+            value: visualValues[0],
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(111, 211, 255, 0.9)' },
+                { offset: 1, color: 'rgba(32, 139, 255, 0.9)' }
+              ])
+            }
+          },
+          {
+            name: '生态评估工作流',
+            value: visualValues[1],
+            itemStyle: { color: 'rgba(0,0,0,0)' } // 角度保留，颜色完全透明
+          },
+          {
+            name: '应急监测工作流',
+            value: visualValues[2],
+            itemStyle: { color: 'rgba(0,0,0,0)' }
+          },
+          {
+            name: '其他分类工作流',
+            value: visualValues[3],
+            itemStyle: { color: 'rgba(0,0,0,0)' }
+          }
+        ]
+      },
+      {
+        name: 'outer-ring',
+        type: 'pie',
+        radius: ['68%', '71%'],
+        center: ['50%', '52%'],
+        silent: true,
+        z: 1,
+        label: { show: false },
+        labelLine: { show: false },
+        data: [
+          {
+            value: 1,
+            itemStyle: {
+              color: 'rgba(74, 176, 255, 0.6)'
+            }
+          }
+        ]
       }
-    },
-    series: series
+    ]
   }
 
   chart.setOption(option)
@@ -296,6 +260,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 175px;
+  height: 26px;
+  padding: 0 8px 0 8px;
+  background: #DCEFFF;
+  border-radius: 13px;
+  box-sizing: border-box;
 }
 
 .stats-indicator {
@@ -305,13 +275,34 @@ onBeforeUnmount(() => {
 }
 
 .stats-name {
+  width: auto;
+  height: 20px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
   font-size: 14px;
-  color: #C0E8FF;
-  flex: 1;
+  color: #3F73B1;
+  line-height: 20px;
+  text-align: left;
+  font-style: normal;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stats-value {
-  font-size: 16px;
-  font-weight: bold;
+  min-width: 24px;
+  height: 20px;
+  margin-left: 4px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 500; /* Medium */
+  font-size: 14px;
+  color: #00A3FA;
+  line-height: 20px;
+  text-align: right;
+  font-style: normal;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 </style>
