@@ -1,0 +1,49 @@
+[
+  {
+    "id": "beijing",
+    "name": "北京",
+    "lon": 116.4074,
+    "lat": 39.9042,
+    "title": "北京",
+    "summary": "",
+    "images": []
+  },
+  {
+    "id": "bayannur",
+    "name": "巴彦淖尔",
+    "lon": 107.386,
+    "lat": 40.751,
+    "title": "巴彦淖尔",
+    "summary": "此处为示例说明，可在本文件中修改文案；配图请将图片放入 public/map/popup/ 并在 images 中填写路径。",
+    "images": []
+  },
+  {
+    "id": "yingkou-bayuquan",
+    "name": "营口鲅鱼圈",
+    "lon": 122.235,
+    "lat": 40.667,
+    "title": "营口鲅鱼圈",
+    "summary": "在辽宁鲅鱼圈测区，多维度SAR载荷航空遥感监测任务顺利完成。此次任务获取了该海陆交界区的高分辨率SAR数据，涵盖港口、城市、农田等多样地物，旨在开展目标检测、变化检测、海冰监测等研究，展示区域发展与环境变化。任务使用多维度SAR系统等，获取了全极化数据，为区域可持续发展提供科学支撑。",
+    "images": [
+      "/map/popup/营口鲅鱼圈.png"
+    ]
+  },
+  {
+    "id": "dongying",
+    "name": "东营数据",
+    "lon": 118.505,
+    "lat": 37.438,
+    "title": "东营数据",
+    "summary": "此处为示例说明，可在本文件中修改文案；配图请将图片放入 public/map/popup/ 并在 images 中填写路径。",
+    "images": []
+  },
+  {
+    "id": "wanning",
+    "name": "海南万宁",
+    "lon": 110.389,
+    "lat": 18.799,
+    "title": "海南万宁",
+    "summary": "此处为示例说明，可在本文件中修改文案；配图请将图片放入 public/map/popup/ 并在 images 中填写路径。",
+    "images": []
+  }
+]
