@@ -2,46 +2,31 @@
   <div class="ai-chat-container">
     <!-- 飞机图标 -->
     <img :src="planeImage" alt="飞机" class="plane-icon" />
-    
+
     <!-- 输入框区域 -->
     <div class="input-wrapper">
       <div class="input-box">
         <img :src="addImage" alt="添加" class="add-icon" />
         <div class="input-tags-wrapper">
           <!-- 选中的词条标签 -->
-          <div 
-            v-for="(tag, index) in selectedTags" 
-            :key="index"
-            class="selected-tag"
-          >
-            <span class="selected-tag-text">{{ tag }}</span>
-            <span class="selected-tag-delete" @click="removeTag(tag)">×</span>
+          <div v-if="selectedTag" class="selected-tag">
+            <span class="selected-tag-text">{{ selectedTag }}</span>
+            <span class="selected-tag-delete" @click="removeTag">×</span>
           </div>
           <!-- 输入框 -->
-          <input 
-            ref="inputRef"
-            v-model="inputText" 
-            type="text" 
-            :placeholder="selectedTags.length === 0 ? '与您的AI智能开始对话吧...' : ''"
-            class="chat-input"
-            @keyup.enter="handleSearch"
-          />
+          <input ref="inputRef" v-model="inputText" type="text" :placeholder="!selectedTag ? '与您的AI智能开始对话吧...' : ''"
+            class="chat-input" @keyup.enter="handleSearch" />
         </div>
         <img :src="searchImage" alt="搜索" class="search-icon" @click="handleSearch" />
       </div>
-      
+
       <!-- 快捷词条 -->
       <div class="quick-tags">
-        <div 
-          v-for="(tag, index) in quickTags" 
-          :key="index"
-          class="tag-item"
-          :class="{ 'tag-selected': selectedTags.includes(tag) }"
-          @click="toggleTag(tag)"
-        >
+        <div v-for="(tag, index) in quickTags" :key="index" class="tag-item"
+          :class="{ 'tag-selected': selectedTag === tag }" @click="toggleTag(tag)">
           <span class="tag-text">{{ tag }}</span>
         </div>
-        <span class="more-btn">...</span>
+        <span class="more-btn">···</span>
       </div>
     </div>
   </div>
@@ -52,6 +37,7 @@ import { ref } from 'vue'
 import planeImage from '../assets/header/智能飞机.png'
 import addImage from '../assets/header/添加.png'
 import searchImage from '../assets/header/搜索.png'
+import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
 const inputText = ref('')
 const inputRef = ref(null)
@@ -64,44 +50,45 @@ const quickTags = ref([
   '航空基感智能体'
 ])
 
-// 选中的词条列表
-const selectedTags = ref([])
+// 选中的词条（单选模式）
+const selectedTag = ref(null)
 
-// 切换词条选中状态
+// 切换词条选中状态（单选模式）
 function toggleTag(tag) {
-  const index = selectedTags.value.indexOf(tag)
-  if (index > -1) {
-    selectedTags.value.splice(index, 1)
+  // 如果点击的标签已经选中，则取消选中
+  if (selectedTag.value === tag) {
+    selectedTag.value = null
   } else {
-    selectedTags.value.push(tag)
+    // 如果点击的标签未选中，则取消当前选中的标签并选中新标签
+    selectedTag.value = tag
   }
 }
 
-// 移除单个选中的词条
-function removeTag(tag) {
-  const index = selectedTags.value.indexOf(tag)
-  if (index > -1) {
-    selectedTags.value.splice(index, 1)
-  }
+// 移除选中的词条
+function removeTag() {
+  selectedTag.value = null
 }
 
 // 点击搜索
 function handleSearch() {
-  const params = {
-    tags: selectedTags.value,
-    text: inputText.value
+
+  const params = `${selectedTag.value ? selectedTag.value + ':' : ''}` + inputText.value
+  let token = getApiToken()
+  if (!token) {
+    redirectToLogin('登录已过期，请重新登录')
+    return
   }
+  let http = `  https://cangling.cn/cisToken=${token}&question=${params}#/earth-v3.1`
   console.log('搜索参数：', params)
+  window.open(http, '_blank')
   // TODO: 调用搜索接口，传递参数
-  alert('搜索参数：' + JSON.stringify(params))
-}
-</script>
+}</script>
 
 <style scoped>
 .ai-chat-container {
   /* position: fixed; */
   position: absolute;
-  top: 100px;
+  top: 126px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -116,6 +103,10 @@ function handleSearch() {
   height: 60px;
   object-fit: contain;
   flex-shrink: 0;
+  position: absolute;
+  left: -50px;
+  top: -10px;
+  cursor: pointer;
 }
 
 /* 输入框区域 */
@@ -205,7 +196,7 @@ function handleSearch() {
   font-family: PingFangSC, PingFang SC;
   font-weight: 400;
   font-size: 14px;
-  color: #B8BCC1;
+  color: #000;
   line-height: 20px;
   text-align: left;
   font-style: normal;
@@ -225,11 +216,13 @@ function handleSearch() {
 }
 
 .search-icon {
-  width: 36px;
-  height: 36px;
+  width: 27px;
+  height: 27px;
   cursor: pointer;
   flex-shrink: 0;
   margin-right: 0;
+  position: absolute;
+  right: 5px;
 }
 
 /* 快捷词条 */
@@ -238,6 +231,7 @@ function handleSearch() {
   align-items: center;
   gap: 12px;
   padding-left: 8px;
+  justify-content: center;
 }
 
 .tag-item {
@@ -272,9 +266,14 @@ function handleSearch() {
 
 
 .more-btn {
-  padding: 6px 10px;
-  font-size: 14px;
-  color: #42ACFF;
+  padding: 0px 10px;
+  font-size: 13px;
+  color: #158FFF;
+  font-family: PingFang SC;
+  font-weight: 400;
   cursor: pointer;
+  display: flex;
+  text-align: center;
+  padding-bottom: 5px;
 }
 </style>

@@ -1,11 +1,8 @@
 <template>
   <div class="bottom-navigation">
     <div class="navigation-container">
-      <div v-for="item in navigationItems" :key="item.id" class="nav-item">
-        <div
-          class="icon-container"
-          :style="{ backgroundImage: `url(${item.icon})` }"
-        >
+      <div v-for="item in navigationItems" :key="item.id" class="nav-item" @click="handleSwitch(item.parent)">
+        <div class="icon-container" :style="{ backgroundImage: `url(${item.icon})` }">
           <div class="nav-label">{{ item.label }}</div>
         </div>
       </div>
@@ -13,7 +10,7 @@
   </div>
 </template>
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import icon1 from "../assets/content/模型算法开发.png";
 import icon2 from "../assets/content/模型训练运行.png";
 import icon3 from "../assets/content/模型库.png";
@@ -26,50 +23,69 @@ const navigationItems = ref([
     id: 1,
     label: "模型算法开发",
     icon: icon1,
+    parent: '#734c29',
   },
   {
     id: 2,
     label: "模型训练运行",
     icon: icon2,
+    parent: '#740ca3',
   },
   {
     id: 3,
     label: "模型库",
     icon: icon3,
+    parent: '#6fdfca',
   },
   {
     id: 4,
     label: "工作流构建",
     icon: icon4,
+    parent: '#d4caff',
   },
   {
     id: 5,
     label: "样本制作管理",
     icon: icon5,
+    parent: '#85edb3',
   },
   {
     id: 6,
     label: "研究管理协同",
     icon: icon6,
+    parent: '#22a9ee',
   },
 ]);
+// 初始化 SafeMessenger
+let messenger = null;
+
+onMounted(() => {
+  // 初始化 SafeMessenger
+  messenger = new SafeMessenger({
+    targetWindow: window.parent,
+    targetOrigin: '*'
+  });
+});
+
+// 导航切换处理方法
+function handleSwitch(name) {
+  try {
+    messenger.send('IFRAME_SWITCH', name, (res) => {
+      console.log(`父页面已响应切换: ${name}, res: ${res}`);
+    });
+  } catch (error) {
+    console.error('发送消息失败:', error);
+    alert(`切换到: ${name}`);
+  }
+}
 </script>
 <style scoped>
 .bottom-navigation {
-  /* position: fixed; */
   position: absolute;
-  /* bottom: 0; */
-  /* left: 0;
-  right: 0; */
   z-index: 1000;
-  /* padding: 20px 0; */
-  top: 802px; 
-  left: 4px; 
-  right: 0; 
-  padding: 0;
-  width: 1919px;
-  height: 51px;
-  bottom: auto;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .navigation-container {
@@ -110,14 +126,14 @@ const navigationItems = ref([
 .nav-label {
   position: absolute;
   left: 50%;
-  bottom: 4px;
+  bottom: 12px;
   transform: translateX(-50%);
   width: 108px;
   height: 25px;
-  font-family: PingFangSC, PingFang SC;
+  font-family: PingFang SC;
   font-weight: 600;
   font-size: 18px;
-  color: #2AADFF;
+  color: #157FEB;
   line-height: 25px;
   text-align: center;
   font-style: normal;
