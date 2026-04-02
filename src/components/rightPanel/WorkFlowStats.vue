@@ -244,6 +244,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   width: 388px;
+  margin-top: -6px; /* 整块上移，贴近设计稿间距 */
 }
 
 /* 标题栏 */
@@ -253,7 +254,7 @@ onBeforeUnmount(() => {
   padding: 0 12px 0 16px;
   background: linear-gradient(270deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
   text-align: right;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -272,14 +273,14 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 16px;
-  padding: 0 8px;
+  gap: 14px;
+  padding: 0 6px;
 }
 
 /* 图表容器 */
 .chart-container {
-  width: 160px;
-  height: 160px;
+  width: 152px;
+  height: 152px;
   flex-shrink: 0;
 }
 

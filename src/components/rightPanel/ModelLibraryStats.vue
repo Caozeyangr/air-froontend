@@ -22,7 +22,7 @@
 
       <div class="category-item">
         <div class="category-header">
-          <span class="category-dot" style="background: #52C41A;"></span>
+          <span class="category-dot" style="background: #F5B83A;"></span>
           <span class="category-name">目标检测</span>
         </div>
         <div class="tag-list">
@@ -32,7 +32,7 @@
 
       <div class="category-item">
         <div class="category-header">
-          <span class="category-dot" style="background: #FAAD14;"></span>
+          <span class="category-dot" style="background: #22D3A6;"></span>
           <span class="category-name">参数反演</span>
         </div>
         <div class="tag-list">
@@ -253,7 +253,9 @@ function initChart() {
     // A：折点必须落在 midRadian 的径向射线上（x=cos(mid)*r, y=sin(mid)*r）
     // 左边：水平->沿径向斜向下入饼图；右边：沿径向斜向上出饼图->水平
     // 控制水平引导线的外侧长度（数值越大，水平线越长）
-    const xOuterAbs = 2.35
+    // 右侧“参数反演”避免出界：保持 xEnd 在 xAxis3D 范围内
+    // 目标检测单独加长引导线，便于文字远离扇区
+    const xOuterAbs = item.name === '目标检测' ? 1.62 : 1.35
     const rEdge = 1.02
     const sign = Math.cos(midRadian) >= 0 ? 1 : -1
     const cosMid = Math.cos(midRadian)
@@ -261,13 +263,22 @@ function initChart() {
 
     const xEdge = cosMid * rEdge
     const yEdge = sinMid * rEdge
-    const length1 = 0.18 // 短斜段长度（决定折点距外缘的距离）
+    const length1 = item.name === '目标检测' ? 0.30 : 0.18 // 目标检测单独加长引导线
     const rBend = rEdge + length1
     const xBend = cosMid * rBend
     const yBend = sinMid * rBend
 
     const xEnd = sign * xOuterAbs
     const yEnd = yBend
+    // 分类别微调标注，避免与饼图/彼此重叠
+    const labelOffsetY = item.name === '语义分割'
+      ? 0.08
+      : item.name === '目标检测'
+        ? -0.16
+        : 0.02
+    const labelOffsetX = item.name === '目标检测'
+      ? -0.30
+      : (sign < 0 ? -0.05 : 0.04)
     const zPie = topZ + 0.01
     const zBend = topZ + 0.04
 
@@ -295,7 +306,7 @@ function initChart() {
       type: 'scatter3D',
       symbolSize: 0,
       itemStyle: { color: item.itemStyle.color },
-      data: [[xEnd, yEnd, 0.30]],
+      data: [[xEnd + labelOffsetX, yEnd + labelOffsetY, 0.30]],
       label: {
         show: true,
         formatter: () => sign > 0
@@ -303,7 +314,7 @@ function initChart() {
           : `{name|${item.name}} {value|${item.value}}`,
         rich: {
           value: {
-            width: 10,
+            width: 22,
             height: 24,
             fontFamily: 'DINAlternate, DINAlternate',
             fontSize: 20,
@@ -311,9 +322,10 @@ function initChart() {
             color: item.itemStyle.color,
             lineHeight: 24,
             align: sign > 0 ? 'left' : 'right',
+            padding: sign > 0 ? [0, 0, 0, 4] : [0, 4, 0, 0],
           },
           name: {
-            width: 56,
+            width: 62,
             height: 20,
             fontFamily: 'SourceHanSansCN, SourceHanSansCN',
             fontSize: 14,
@@ -321,6 +333,7 @@ function initChart() {
             color: item.itemStyle.color,
             lineHeight: 20,
             align: sign > 0 ? 'right' : 'left',
+            padding: sign > 0 ? [0, 4, 0, 0] : [0, 0, 0, 4],
           }
         },
         color: item.itemStyle.color,
@@ -393,12 +406,12 @@ function initChart() {
       }
     },
     xAxis3D: {
-      min: -1.5,
-      max: 1.5
+      min: -1.35,
+      max: 1.35
     },
     yAxis3D: {
-      min: -1.5,
-      max: 1.5
+      min: -1.35,
+      max: 1.35
     },
     zAxis3D: {
       min: -0.5,
@@ -411,7 +424,7 @@ function initChart() {
         // 更平一些的俯视：角度从 45° 调整到 30°
         alpha: 30,       // 0 是侧视，90 是正上方，这里取 30° 更接近平视
         beta: 0,
-        distance: 190,   // 再拉近一点，让饼图整体更大
+        distance: 172,   // 进一步拉近：只放大饼图本体
         minAlpha: 30,
         maxAlpha: 30,
         minBeta: 0,
@@ -458,7 +471,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   width: 388px;
-  margin-bottom: 40px;
+  margin-bottom: 0;
+  margin-top: 14px; /* 与上方模型库卡片拉开距离（明显可见） */
 }
 
 /* 标题栏 */
@@ -468,7 +482,7 @@ onBeforeUnmount(() => {
   padding: 0 12px 0 16px;
   background: linear-gradient(270deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
   text-align: right;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -491,16 +505,18 @@ onBeforeUnmount(() => {
 /* 图表容器 */
 .chart-container {
   width: 100%;
-  height: 220px;
-  margin-bottom: 8px;
+  height: 200px;
+  margin-top: -6px;  /* 饼图贴近标题栏 */
+  margin-bottom: 0;
 }
 
 /* 分类列表 */
 .category-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   padding: 0 4px;
+  margin-top: -10px; /* 图文间距按图5收紧 */
 }
 
 .category-item {

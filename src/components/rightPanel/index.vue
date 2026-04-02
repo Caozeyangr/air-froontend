@@ -29,12 +29,14 @@ import WorkFlowStats from './WorkFlowStats.vue'
   position: absolute;
   /* top: 100px;
   right: 22px; */
-  top: 100px;
-  right: 22px;
+  /* 贴近设计稿（图2/3/4）：整体略上移且留出右侧呼吸感 */
+  top: 112px;
+  right: 18px;
   bottom: 0;
   z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: end;
+  gap: 18px;
 }
 </style>

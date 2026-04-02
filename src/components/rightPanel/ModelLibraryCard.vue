@@ -35,7 +35,8 @@ const modelCountDisplay = computed(() => Number(props.modelCount || 0))
   flex-direction: column;
   width: 425px;
   height: 115px;
-  margin-bottom: 38px;
+  /* 由 RightPanel 的 gap 控制间距，避免把下方模块整体顶下去 */
+  margin-bottom: 0;
 }
 
 .card-content {

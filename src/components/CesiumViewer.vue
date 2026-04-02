@@ -54,6 +54,7 @@ const cesiumContainer = ref(null)
 let viewer = null
 let clickHandler = null
 let postRenderListener = null
+let domClickHandler = null
 
 const ORANGE = Cesium.Color.fromCssColorString('#FF9430')
 const BLUE = Cesium.Color.fromCssColorString('#165DFF')
@@ -62,6 +63,20 @@ const LABEL_TEXT = Cesium.Color.WHITE
 // 选中/未选中图标（未选中蓝色由运行时从橙色图标色相变换得到）
 const iconOrangeUrl = '/map/popup/定位 选中@2x.png'
 let iconBlueDataUrl = iconOrangeUrl
+
+// 当前只精确展示这 5 个点位（其它新增点先“隐藏”避免影响视野与点击拾取）
+const ACTIVE_MARKER_IDS = new Set(['beijing', 'bayannur', 'yingkou-bayuquan', 'dongying', 'wanning'])
+
+function isActiveMarker(m) {
+  const id = m?.id || m?.name
+  if (!ACTIVE_MARKER_IDS.has(id)) return false
+  const lon = Number(m?.lon)
+  const lat = Number(m?.lat)
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return false
+  // lon/lat=0/0 属于占位数据：暂不显示
+  if (lon === 0 && lat === 0) return false
+  return true
+}
 
 const popupVisible = ref(false)
 const popupData = reactive({
@@ -287,9 +302,118 @@ function distSqScreen(a, b) {
   return dx * dx + dy * dy
 }
 
+// 把鼠标 CSS 像素坐标转换到 Cesium windowCoordinates 使用的画布像素坐标
+function toCesiumScreenPosition(pos) {
+  if (!viewer?.scene?.canvas || !pos) return new Cesium.Cartesian2(pos?.x || 0, pos?.y || 0)
+  const canvas = viewer.scene.canvas
+  const ratioX = canvas.clientWidth > 0 ? canvas.width / canvas.clientWidth : 1
+  const ratioY = canvas.clientHeight > 0 ? canvas.height / canvas.clientHeight : 1
+  return new Cesium.Cartesian2(pos.x * ratioX, pos.y * ratioY)
+}
+
+/**
+ * 优先按“图标矩形”命中：用户点到哪个标牌框，就打开哪个弹窗。
+ * 这一步使用实体真实屏幕坐标，避免密集区被其它点误吸附。
+ */
+function tryOpenPopupByBillboardRect(clickScreen) {
+  if (!viewer || !markerEntities?.size) return false
+
+  const BOX_W = 86
+  const BOX_H = 40
+  const halfW = BOX_W / 2
+  let best = null
+  let bestSq = Infinity
+
+  for (const [, entry] of markerEntities) {
+    const entity = entry?.billboardEntity
+    const m = entity?.popupPayload
+    if (!entity || !m) continue
+
+    const pos = entity.position?.getValue?.(viewer.clock.currentTime)
+    if (!pos) continue
+    const c = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, pos)
+    if (!c) continue
+
+    // billboard: horizontal=center, vertical=bottom
+    const left = c.x - halfW
+    const right = c.x + halfW
+    const top = c.y - BOX_H
+    const bottom = c.y
+
+    if (clickScreen.x < left || clickScreen.x > right || clickScreen.y < top || clickScreen.y > bottom) {
+      continue
+    }
+
+    // 同时命中多个框时，取距离框中心最近的一个
+    const center = { x: c.x, y: (top + bottom) / 2 }
+    const dSq = distSqScreen(clickScreen, center)
+    if (dSq < bestSq) {
+      bestSq = dSq
+      best = { m, pos }
+    }
+  }
+
+  if (best) {
+    openPopup(best.m, best.pos, clickScreen)
+    setSelectedMarker(best.m, best.pos)
+    viewer.scene.requestRender()
+    return true
+  }
+  return false
+}
+
+// 北京/营口/东营优先命中层：密集区先在这三点内判定，避免跳到巴彦淖尔
+function tryOpenPopupByCoreThreeMarkers(clickScreen) {
+  if (!viewer || !markerEntities?.size) return false
+  const CORE_IDS = new Set(['beijing', 'yingkou-bayuquan', 'dongying'])
+  const halfW = 44
+  const boxH = 44
+
+  let best = null
+  let bestSq = Infinity
+
+  for (const [id, entry] of markerEntities) {
+    if (!CORE_IDS.has(String(id))) continue
+    const entity = entry?.billboardEntity
+    const m = entity?.popupPayload
+    if (!entity || !m) continue
+
+    const pos = entity.position?.getValue?.(viewer.clock.currentTime)
+    if (!pos) continue
+    const c = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, pos)
+    if (!c) continue
+
+    const left = c.x - halfW
+    const right = c.x + halfW
+    const top = c.y - boxH
+    const bottom = c.y + 2
+    if (clickScreen.x < left || clickScreen.x > right || clickScreen.y < top || clickScreen.y > bottom) {
+      continue
+    }
+
+    const dSq = distSqScreen(clickScreen, { x: c.x, y: c.y - 22 })
+    if (dSq < bestSq) {
+      bestSq = dSq
+      best = { m, pos }
+    }
+  }
+
+  if (best) {
+    openPopup(best.m, best.pos, clickScreen)
+    setSelectedMarker(best.m, best.pos)
+    viewer.scene.requestRender()
+    return true
+  }
+  return false
+}
+
 /** 华北密集区：北京常在屏幕中心，命中框易与营口/东营重叠；对北京用更小框 + 排序时加权，避免「略近北京」抢走点击 */
 function isBeijingMarker(m) {
   return m && (m.id === 'beijing' || m.name === '北京')
+}
+
+function isBayannurMarker(m) {
+  return m && (m.id === 'bayannur' || m.name === '巴彦淖尔')
 }
 
 /**
@@ -300,15 +424,20 @@ function getHitboxSizeFactor(m) {
   if (!m) return 0.8
   const id = m.id || ''
   if (id === 'beijing' || m.name === '北京') return 0.34
-  if (id === 'yingkou-bayuquan' || id === 'dongying') return 0.58
-  if (id === 'bayannur' || id === 'wanning') return 0.82
+  // 东营/营口：给到中等命中圈，提升可点性
+  if (id === 'yingkou-bayuquan' || id === 'dongying') return 0.66
+  // 巴彦：显著缩小命中圈，避免抢占东营/营口点击
+  if (id === 'bayannur') return 0.42
+  if (id === 'wanning') return 0.72
   return 0.75
 }
 
 /** 用于排序/最近邻：北京强惩罚，其它点按真实距离比较 */
 function pixelDistScoreForPick(m, dSq) {
-  // 北京在远视图时更容易出现在屏幕中心，适当加权但不要过大，避免误伤真实点击
+  // 北京在缩小视图时常位于中心，对其做轻惩罚避免“抢点”
   if (isBeijingMarker(m)) return dSq * 2
+  // 巴彦在当前布局下也容易“抢中”东营/营口，增加轻惩罚
+  if (isBayannurMarker(m)) return dSq * 2.2
   return dSq
 }
 
@@ -325,7 +454,7 @@ function getScreenProximityPickParams() {
     h = 0
   }
   if (!Number.isFinite(h) || h <= 0) h = 5e6
-  // 远视图下标牌在屏幕上更“挤”，命中阈值收紧；同时尽量保持能点到
+  // 远视图下标牌在屏幕上更“挤”，命中阈值随相机高度动态变化
   const maxPx = Cesium.Math.clamp(1.1e6 / Math.sqrt(h), 140, 240)
   const boxScale = Cesium.Math.clamp(2.2e6 / h, 1, 1.35)
   return {
@@ -575,11 +704,13 @@ function tryOpenPopupByScreenProximity(clickScreen) {
   let bestRawSq = Infinity
   let bestScore = Infinity
 
-  for (let mi = 0; mi < markersForPick.length; mi++) {
-    const m = markersForPick[mi]
-    if (m?.lon == null || m?.lat == null) continue
-    const wm = toWebMercator(m.lon, m.lat)
-    const p0 = fromWebMercator(wm.x, wm.y, 0)
+  // 用“实体真实渲染位置”做回退命中，避免与原始 lon/lat（未应用微分散）不一致
+  for (const [, entry] of markerEntities) {
+    const entity = entry?.billboardEntity
+    const m = entity?.popupPayload
+    if (!entity || !m) continue
+    const p0 = entity.position?.getValue?.(viewer.clock.currentTime)
+    if (!p0) continue
     const sc = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, p0)
     if (!sc) continue
     const ax = sc.x
@@ -595,6 +726,10 @@ function tryOpenPopupByScreenProximity(clickScreen) {
       const ay = sc.y - off
       dSq = Math.min(dSq, distSqScreen(clickScreen, { x: ax, y: ay }))
     }
+
+    const markerFactor = getHitboxSizeFactor(m)
+    const markerMaxSq = (maxPx * markerFactor) * (maxPx * markerFactor)
+    if (dSq > markerMaxSq || dSq > maxSq) continue
 
     const score = pixelDistScoreForPick(m, dSq)
     if (score < bestScore) {
@@ -617,6 +752,20 @@ function tryOpenPopupByScreenProximity(clickScreen) {
 
 function attachPopupPayload(entity, payload) {
   entity.popupPayload = payload
+}
+
+function getMarkerEntityFromPickedObject(picked) {
+  if (!Cesium.defined(picked)) return null
+  const candidates = [
+    picked.id,
+    picked.primitive?.id,
+    picked.collection?.id,
+    picked.primitive?.collection?.id
+  ]
+  for (const c of candidates) {
+    if (c && c.popupPayload) return c
+  }
+  return null
 }
 
 function addChinaBoundary3857() {
@@ -838,10 +987,19 @@ function updateBaseImageryRectangle(rect) {
 /** 初始视野：全国居中、五省点位均在框内（接近设计稿整图比例） */
 function fitCameraToMarkerBounds(markers) {
   if (!viewer || !markers?.length) return
-  // 以 markers 的经纬度外包框为准，给足 padding，并同步更新底图 imagery rectangle
+  // 以 markers 的经纬度外包框为准，给足 padding；底图 rectangle 保持固定，避免界面“奇怪”
   const dest = computeMarkersBoundsRect(markers, { paddingScale: 1.45 })
-  updateBaseImageryRectangle(dest)
-  viewer.camera.setView({ destination: dest })
+  const baseRect = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+  const clipped = Cesium.Rectangle.simpleIntersection(dest, baseRect) || dest
+  // 若 markers 很少（例如其它点暂时隐藏/占位），避免视野缩得太紧导致“界面不如以前”
+  const baseLonSpan = baseRect.east - baseRect.west
+  const baseLatSpan = baseRect.north - baseRect.south
+  const lonSpan = clipped.east - clipped.west
+  const latSpan = clipped.north - clipped.south
+  const finalRect =
+    lonSpan < baseLonSpan * 0.78 || latSpan < baseLatSpan * 0.78 ? baseRect : clipped
+
+  viewer.camera.setView({ destination: finalRect })
   viewer.scene.requestRender()
 }
 
@@ -925,50 +1083,27 @@ function setupMarkerInteraction() {
     const screenPos = new Cesium.Cartesian2(click.position.x, click.position.y)
     viewer.scene.requestRender()
 
-    // 1) 优先用 drillPick 命中真实标牌实体（避免密集区靠“距离”误判）
-    const picks = viewer.scene.drillPick(click.position, 64)
-    {
-      const { maxPx } = getScreenProximityPickParams()
-      const maxSq = maxPx * maxPx
-      let best = null
-      let bestScore = Infinity
-      // drillPick 可能返回多个叠加实体：取“屏幕距离最近”的那个（并对北京加权惩罚）
-      for (let i = 0; i < picks.length; i++) {
-        const picked = picks[i]
-        if (!Cesium.defined(picked) || !picked.id) continue
-        const entity = picked.id
-        if (!entity.popupPayload) continue
-        const m = entity.popupPayload
-        let pos = null
-        if (entity.position) {
-          pos = entity.position.getValue(viewer.clock.currentTime)
-        }
-        if (!pos && m.lon != null && m.lat != null) {
-          const wm = toWebMercator(m.lon, m.lat)
-          pos = fromWebMercator(wm.x, wm.y, 0)
-        }
-        if (!pos) continue
-        const c = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, pos)
-        if (!c) continue
-        const anchorY = c.y - getScreenProximityPickParams().anchorYOffset
-        const dSq = distSqScreen(screenPos, { x: c.x, y: anchorY })
-        if (dSq > maxSq) continue
-        const score = pixelDistScoreForPick(m, dSq)
-        if (score < bestScore) {
-          bestScore = score
-          best = { m, pos }
-        }
+    // 最稳定方案：邻域多点 pick，命中哪个实体就弹哪个
+    const offsets = [
+      [0, 0], [4, 0], [-4, 0], [0, 4], [0, -4],
+      [8, 0], [-8, 0], [0, 8], [0, -8]
+    ]
+    for (const [dx, dy] of offsets) {
+      const p = new Cesium.Cartesian2(click.position.x + dx, click.position.y + dy)
+      const picked = viewer.scene.pick(p)
+      const entity = getMarkerEntityFromPickedObject(picked)
+      if (!entity || !entity.popupPayload) continue
+      const m = entity.popupPayload
+      let pos = null
+      if (entity.position) pos = entity.position.getValue(viewer.clock.currentTime)
+      if (!pos && m.lon != null && m.lat != null) {
+        const wm = toWebMercator(m.lon, m.lat)
+        pos = fromWebMercator(wm.x, wm.y, 0)
       }
-      if (best) {
-        openPopup(best.m, best.pos, screenPos)
-        setSelectedMarker(best.m, best.pos)
-        viewer.scene.requestRender()
-        return
-      }
-    }
-
-    // 2) drillPick 失败时，再用屏幕距离回退（保证缩小后仍可点）
-    if (tryOpenPopupByScreenProximity(screenPos)) {
+      if (!pos) continue
+      openPopup(m, pos, screenPos)
+      setSelectedMarker(m, pos)
+      viewer.scene.requestRender()
       return
     }
 
@@ -984,6 +1119,46 @@ function setupMarkerInteraction() {
     }
   }
   viewer.scene.postRender.addEventListener(postRenderListener)
+
+  // DOM 兜底点击：某些环境下 Cesium LEFT_CLICK 不稳定时仍可触发点位弹窗
+  const wrapEl = cesiumWrapRef.value
+  if (wrapEl && !domClickHandler) {
+    domClickHandler = (evt) => {
+      if (!viewer || !viewer.scene || !viewer.scene.canvas) return
+      const canvas = viewer.scene.canvas
+      const rect = canvas.getBoundingClientRect()
+      if (!rect.width || !rect.height) return
+      const ratioX = canvas.width / rect.width
+      const ratioY = canvas.height / rect.height
+      const x = (evt.clientX - rect.left) * ratioX
+      const y = (evt.clientY - rect.top) * ratioY
+      const screenPos = new Cesium.Cartesian2(x, y)
+
+      const offsets = [
+        [0, 0], [4, 0], [-4, 0], [0, 4], [0, -4],
+        [8, 0], [-8, 0], [0, 8], [0, -8]
+      ]
+      for (const [dx, dy] of offsets) {
+        const p = new Cesium.Cartesian2(x + dx, y + dy)
+        const picked = viewer.scene.pick(p)
+        const entity = getMarkerEntityFromPickedObject(picked)
+        if (!entity || !entity.popupPayload) continue
+        const m = entity.popupPayload
+        let pos = null
+        if (entity.position) pos = entity.position.getValue(viewer.clock.currentTime)
+        if (!pos && m.lon != null && m.lat != null) {
+          const wm = toWebMercator(m.lon, m.lat)
+          pos = fromWebMercator(wm.x, wm.y, 0)
+        }
+        if (!pos) continue
+        openPopup(m, pos, screenPos)
+        setSelectedMarker(m, pos)
+        viewer.scene.requestRender()
+        return
+      }
+    }
+    wrapEl.addEventListener('click', domClickHandler, true)
+  }
 }
 
 onMounted(async () => {
@@ -1072,9 +1247,22 @@ onMounted(async () => {
       { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [] }
     ]
   }
-  markersForPick = markers
-  addMarkers3857(markers)
-  fitCameraToMarkerBounds(markers)
+  const activeMarkers = markers.filter(isActiveMarker)
+  // 防御：如果 json 没取到 id（或暂时为空），至少保证 5 个点能工作
+  const safeMarkers =
+    activeMarkers.length > 0
+      ? activeMarkers
+      : [
+          { id: 'beijing', name: '北京', lon: 116.4074, lat: 39.9042, title: '北京', summary: '', images: [] },
+          { id: 'bayannur', name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [] },
+          { id: 'yingkou-bayuquan', name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [] },
+          { id: 'dongying', name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [] },
+          { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [] }
+        ]
+
+  markersForPick = safeMarkers
+  addMarkers3857(safeMarkers)
+  fitCameraToMarkerBounds(safeMarkers)
   setupMarkerInteraction()
 })
 
@@ -1093,6 +1281,10 @@ onUnmounted(() => {
     }
     viewer.destroy()
     viewer = null
+  }
+  if (domClickHandler && cesiumWrapRef.value) {
+    cesiumWrapRef.value.removeEventListener('click', domClickHandler, true)
+    domClickHandler = null
   }
 })
 </script>

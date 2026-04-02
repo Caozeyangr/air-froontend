@@ -20,6 +20,20 @@ let postRenderListener = null
 let rafId = null
 let lastRenderAt = 0
 
+// 与 CesiumViewer.vue 保持一致：只显示这 5 个点位（其它新增点先“隐藏”）
+const ACTIVE_MARKER_IDS = new Set(['beijing', 'bayannur', 'yingkou-bayuquan', 'dongying', 'wanning'])
+
+function isActiveMarker(m) {
+  const id = m?.id || m?.name
+  if (!ACTIVE_MARKER_IDS.has(id)) return false
+  const lon = Number(m?.lon)
+  const lat = Number(m?.lat)
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return false
+  // lon/lat=0/0 属于占位：先不参与辐射计算
+  if (lon === 0 && lat === 0) return false
+  return true
+}
+
 async function loadMarkers() {
   const res = await fetch('/markers-popup.json')
   if (!res.ok) throw new Error(`markers load failed: ${res.status}`)
@@ -155,7 +169,8 @@ async function init() {
   }
 
   const markers = await loadMarkers()
-  const { centerMarker, targets } = pickCenterAndTargets(markers)
+  const activeMarkers = markers.filter(isActiveMarker)
+  const { centerMarker, targets } = pickCenterAndTargets(activeMarkers)
 
   const render = () => {
     if (!chartRef.value) return

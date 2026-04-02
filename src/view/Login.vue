@@ -23,6 +23,12 @@
       </div>
       <button class="login-button" @click="handleLogin" :disabled="isLoading">{{ isLoading ? '登录中...' : '登录' }}</button>
       <div v-if="globalError" class="global-error">{{ globalError }}</div>
+      
+    </div>
+    <!-- 底部信息：固定在页面底部（图2效果） -->
+    <div class="login-footer">
+      <div class="unit-info">单位：国家重大科技基础设施 • 中国科学院航空遥感中心</div>
+      <div class="version-info">版本：fb8906474@2026-02-04 10:28:39</div>
     </div>
   </div>
 </template>
@@ -212,6 +218,33 @@ const handleLogin = async () => {
   font-family: AlimamaShuHeiTi;
 }
 
+.login-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  z-index: 2;
+  padding: 0 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  user-select: none;
+}
+
+.unit-info,
+.version-info {
+  height: 28px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 20px;
+  color: #FFFFFF;
+  line-height: 28px;
+  font-style: normal;
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.18);
+}
+
 .login-title {
   text-align: center;
   color: #FFFFFF;
@@ -322,6 +355,57 @@ const handleLogin = async () => {
   background: #ccc;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* 底部信息样式 - 修正版 */
+.login-footer {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  color: white;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 28px;
+  text-align: center;
+  z-index: 3; /* 确保在登录表单之上 */
+}
+
+.version-info {
+  width: 392px;
+  height: 28px;
+  text-align: center;
+  font-style: normal;
+}
+
+.unit-info {
+  width: 563px;
+  height: 28px;
+  text-align: left;
+  font-style: normal;
+}
+
+/* 修复登录表单位置 */
+.login-form {
+  position: relative;
+  right: 100px;
+  z-index: 2;
+  width: 514px;
+  padding: 40px;
+  font-family: AlimamaShuHeiTi;
+}
+
+/* 修复登录表单位置 */
+.login-form {
+  position: relative;
+  right: 100px;
+  z-index: 2;
+  width: 514px;
+  padding: 40px;
+  font-family: AlimamaShuHeiTi;
 }
 
 </style>
