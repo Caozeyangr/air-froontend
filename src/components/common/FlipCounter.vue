@@ -14,7 +14,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch ,onMounted} from 'vue'
 import FlipDigit from './FlipDigit.vue'
 
 const props = defineProps({
@@ -29,6 +29,10 @@ const props = defineProps({
   duration: {
     type: Number,
     default: 5000 // 5秒
+  },
+  step: {
+    type: Number,
+    default: 10
   }
 })
 
@@ -39,33 +43,36 @@ const displayDigits = computed(() => {
   return currentValue.value.toString().split('').map(Number)
 })
 
-onMounted(() => {
-  animateValue()
-})
+// 监听props.value的变化，当value变化时执行动画
+watch(() => props.value, (newValue) => {
+  if (newValue !== undefined && newValue !== null && newValue > 0) {
+    animateValue()
+  }
+}, { immediate: false })
 
-// 从0开始，每5秒增长10
+// 数值更新系统：从0开始，每5秒增长10，直到达到目标值
 function animateValue() {
   isAnimating.value = true
   currentValue.value = 0
   
-  const step = 10      // 每次增长10
-  const interval = 5000 // 每5秒增长一次
-  const maxValue = 200  // 最大增长到200
-  
+  const step = props.step           // 每次增长10
+  const interval = 1000     // 每5秒增长一次
+  const targetValue = props.value  // 使用传入的value作为最终目标值
+  console.log(targetValue,'targetValue')
   const grow = () => {
-    const targetValue = Math.min(currentValue.value + step, maxValue)
+    const nextValue = Math.min(currentValue.value + step, targetValue)
     
-    animateToTarget(currentValue.value, targetValue, 1000, () => {
-      if (currentValue.value < maxValue) {
-        setTimeout(grow, interval - 1000) // 减去动画时间
+    animateToTarget(currentValue.value, nextValue, 1000, () => {
+      if (currentValue.value < targetValue) {
+        setTimeout(grow, interval - 1000) // 减去动画时间，确保总间隔为5秒
       } else {
         isAnimating.value = false
       }
     })
   }
   
-  // 延迟后开始第一次增长
-  setTimeout(grow, interval)
+  // 开始第一次增长
+  grow()
 }
 
 // 动画到目标值

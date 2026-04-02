@@ -1,7 +1,7 @@
 <template>
   <div class="left-panel">
-    <SampleLibraryCard />
-    <SampleLibraryStats :sample-set="sampleSet" :sample-count="sampleCount" />
+    <SampleLibraryCard :sample-count="sampleCount" />
+    <SampleLibraryStats :sample-set="sampleSet"  />
     <ResourceStats
       :gpu="resourceMetrics.gpu"
       :cpu="resourceMetrics.cpu"
@@ -39,12 +39,11 @@ import HardwareStats from './HardwareStats.vue'
   position: absolute;
   /* top: 100px;
   left: 22px; */
-  top: 119px; 
+  top: 100px; 
   left: 26px;
   bottom: 0;
   z-index: 50;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 </style>

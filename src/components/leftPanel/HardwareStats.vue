@@ -76,6 +76,8 @@ const statsData = [
 
 /* 统计卡片 */
 .stat-card {
+  width: 186px;
+  height: 58px;
   position: relative;
   display: flex;
   align-items: center;
@@ -92,7 +94,6 @@ const statsData = [
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill; /* “铺满”要求拉伸充满整个卡片框 */
   z-index: 0;
 }
 
@@ -130,7 +131,7 @@ const statsData = [
 .stat-number {
   height: 28px;
   font-family: PingFangSC, PingFang SC;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 20px;
   color: #269EF5;
   line-height: 28px;

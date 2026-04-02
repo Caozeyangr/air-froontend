@@ -4,7 +4,7 @@
     <div class="card-content">
       <div class="text-module">
         <div class="number-row">
-          <FlipCounter :value="28" suffix="+" />
+          <FlipCounter :value="modelCountDisplay" :step="10" suffix="+" />
           <img :src="arrowImage" alt="上升" class="arrow-icon" />
         </div>
         <span class="label">航空智能化精细解译模型库</span>
@@ -18,6 +18,14 @@
 import FlipCounter from '../common/FlipCounter.vue'
 import modelImage from '../../assets/right/航空智能化精细解译模型库.png'
 import arrowImage from '../../assets/left/上箭头.png'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+const props = defineProps({
+  modelCount: {
+    type: Number,
+    default: 0
+  }
+})
+const modelCountDisplay = computed(() => Number(props.modelCount || 0))
 </script>
 
 <style scoped>
@@ -25,8 +33,9 @@ import arrowImage from '../../assets/left/上箭头.png'
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 388px;
-  height: 120px;
+  width: 425px;
+  height: 115px;
+  margin-bottom: 38px;
 }
 
 .card-content {
@@ -42,13 +51,12 @@ import arrowImage from '../../assets/left/上箭头.png'
 
 .text-module {
   position: absolute;
-  left: 10%; /* 距离画面左侧约 1/10 */
+  left: 30px; /* 距离画面左侧约 1/10 */
   top: 42%;  /* 位于中下部，避免贴顶/贴底 */
   transform: translateY(-50%);
-  width: 52%; /* 不越过画面中线，避免遮挡右图 */
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: end;
   justify-content: center;
   gap: 6px;
   z-index: 2;
@@ -67,21 +75,18 @@ import arrowImage from '../../assets/left/上箭头.png'
 }
 
 .label {
-  font-size: 14px;
-  color: #2e4f72;
-  font-weight: 500;
-  line-height: 20px;
-  white-space: nowrap;
-  text-align: left;
+  font-size: 20px;
+  color: #2E4F72;
+  font-weight: 400;
+  font-family: PingFangSC, PingFang SC;
 }
 
 .model-image {
   position: absolute;
-  left: 10%; /* 与左侧文字模块左边缘对齐 */
-  top: -18px;
-  width: 280px;
-  height: 156px;
-  object-fit: contain;
+  left: 0; /* 与左侧文字模块左边缘对齐 */
+  top: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
 }
 </style>

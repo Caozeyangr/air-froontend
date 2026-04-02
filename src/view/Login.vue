@@ -1,6 +1,6 @@
 <template>
   <div class="login-container">
-    <div class="login-bg"><img :src="loginBg" alt="登录背景" class="bg-image" /></div>
+    <div class="login-bg" :style="{ backgroundImage: `url(${loginBg})` }"></div>
     <div class="login-form">
       <h2 class="login-title">欢迎登录</h2>
       
@@ -195,17 +195,12 @@ const handleLogin = async () => {
 
 .login-bg {
   position: absolute;
-  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
-}
-
-.bg-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  background-size: cover;
+  background-position: center;
 }
 
 .login-form {

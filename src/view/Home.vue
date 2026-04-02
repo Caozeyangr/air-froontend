@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, reactive } from 'vue'
+import { computed, onMounted, onBeforeUnmount, reactive } from 'vue'
 import CesiumViewer from '../components/CesiumViewer.vue'
 import BeijingRadiationMap from '../components/BeijingRadiationMap.vue'
 import LeftPanel from '../components/leftPanel/index.vue'
@@ -38,11 +38,6 @@ import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 import headerImage from '../assets/header/顶部标题栏.png'
 import bgImage from '../assets/bg/底部背景2.png'
 
-const STAGE_W = 1920
-const STAGE_H = 960
-const shift = ref({ x: 0, y: 0 })
-const scaleRef = ref(1)
-const posRef = ref({ left: 0, top: 0 })
 const dashboardStats = reactive({
   sampleSet: [],
   sampleCount: 0,
@@ -55,30 +50,14 @@ const resourceMetrics = reactive({
   gpu: 0
 })
 
-function updateStage() {
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const scale = Math.min(vw / STAGE_W, vh / STAGE_H)
-  scaleRef.value = scale
-  const w = STAGE_W * scale
-  const h = STAGE_H * scale
-  posRef.value = {
-    left: (vw - w) / 2 + shift.value.x,
-    top: (vh - h) / 2 + shift.value.y
-  }
-}
-
 onMounted(() => {
-  // updateStage()
   // 检查token是否存在，不存在则重定向到登录页
   checkTokenAndRedirect()
   getDashboardStats()
   getResourceMetrics()
-  window.addEventListener('resize', updateStage)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateStage)
 })
 // 检查token并处理重定向
 function checkTokenAndRedirect() {
@@ -170,13 +149,9 @@ const getResourceMetrics = async () => {
 }
 
 const stageStyle = computed(() => ({
-  width: `${STAGE_W}px`,
-  height: `${STAGE_H}px`,
-  position: 'absolute',
-  left: `${posRef.value.left}px`,
-  top: `${posRef.value.top}px`,
-  transform: `scale(${scaleRef.value})`,
-  transformOrigin: 'top left'
+  width: '100%',
+  height: '100%',
+  position: 'relative'
 }))
 
 // 登录后主页面默认展示辐射效果；如需临时关闭，可加 ?radiation=0
@@ -201,15 +176,16 @@ const showRadiation = computed(() => {
 }
 
 .stage {
-  position: absolute;
+  width: 100%;
+  height: 100%;
 }
 
 .page-bg {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1920px;
-  height: 960px;
+  width: 100%;
+  height: 100%;
   object-fit: fill;
   pointer-events: none;
   user-select: none;

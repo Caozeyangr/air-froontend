@@ -3,7 +3,6 @@
     <!-- 标题 -->
     <div class="title-bar">
       <span class="title-text">智能解译样本库统计</span>
-      <span class="title-count">共{{ sampleCountDisplay }}个</span>
     </div>
     
     <!-- 弹幕区域 -->
@@ -44,7 +43,6 @@ const props = defineProps({
 
 const tags = ref([])
 const displayedTags = ref([])
-const sampleCountDisplay = computed(() => Number(props.sampleCount || 0))
 
 onMounted(async () => {
   if (Array.isArray(props.sampleSet) && props.sampleSet.length) {
@@ -69,19 +67,29 @@ watch(() => props.sampleSet, (val) => {
   }
 }, { deep: true })
 
-// 获取词条样式
+// 获取词条样式 - 根据151px容器高度精确调整位置
 function getTagStyle(index) {
   const rows = 3
   const row = index % rows
-  // const baseTop = 20 + row * 40
-  // const baseDelay = index * 2
-  const baseTop = 12 + row * 21
-  const baseDelay = index * 1.5
+  
+  // 容器高度151px，弹幕高度24px，3行分布
+  // 计算垂直间距，确保弹幕在容器内均匀分布
+  const containerHeight = 151
+  const tagHeight = 24
+  const totalTagHeight = rows * tagHeight
+  const availableSpace = containerHeight - totalTagHeight
+  const padding = availableSpace / (rows + 1) // 上下各留padding，中间均匀分布
+  
+  // 计算每行的top位置
+  const baseTop = padding + row * (tagHeight + padding)
+  
+  // 延迟时间调整，避免弹幕过于密集
+  const baseDelay = index * 1.2
+  
   return {
-    top: `${baseTop}px`,
+    top: `${Math.round(baseTop)}px`,
     animationDelay: `${baseDelay}s`,
-    // animationDuration: `${15 + Math.random() * 5}s`
-    animationDuration: `${20 + Math.random() * 5}s`
+    animationDuration: `${18 + Math.random() * 7}s`
   }
 }
 </script>
@@ -91,8 +99,9 @@ function getTagStyle(index) {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: left;
   width: 388px;
+  margin-bottom: 30px;
 }
 
 /* 标题栏 */
@@ -107,11 +116,13 @@ function getTagStyle(index) {
   display: flex;
   align-items: center;
   /* outline: 2px solid red; */
+  margin-bottom: 25px;
 }
 
 .title-text {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-family: SourceHanSansCN, SourceHanSansCN;
+  font-weight: 500;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
@@ -125,8 +136,8 @@ function getTagStyle(index) {
 /* 弹幕容器 */
 .danmaku-container {
   position: relative;
-  width: 100%;
-  height: 83px;
+  width: 90%;
+  height: 151px;
   /* height: 100%; */
   overflow: hidden;
   /* margin-bottom: 8px; */
@@ -149,11 +160,11 @@ function getTagStyle(index) {
   border: 0;
   overflow: hidden;
   isolation: isolate;
-  font-size: 13px;
+  font-size: 14px;
   color: #3F73B1;
   white-space: nowrap;
   animation: danmakuMove linear infinite;
-  box-shadow: none;
+  font-weight: 500;
 }
 
 .danmaku-tag::before {
