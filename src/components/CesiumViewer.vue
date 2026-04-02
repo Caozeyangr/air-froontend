@@ -111,19 +111,24 @@ function refreshPopupNudge() {
   const wrapRect = wrap.getBoundingClientRect()
   const popupRect = popupEl.getBoundingClientRect()
   const margin = 12
+  // 中间地图安全区域：避开左/右侧面板与底部栏
+  const leftInset = Math.min(430, wrapRect.width * 0.22)
+  const rightInset = Math.min(430, wrapRect.width * 0.22)
+  const topInset = Math.min(140, wrapRect.height * 0.12)
+  const bottomInset = Math.min(140, wrapRect.height * 0.12)
+  const safeLeft = wrapRect.left + leftInset + margin
+  const safeRight = wrapRect.right - rightInset - margin
+  const safeTop = wrapRect.top + topInset + margin
+  const safeBottom = wrapRect.bottom - bottomInset - margin
 
   let nx = popupNudge.value.x
   let ny = popupNudge.value.y
 
-  const minLeft = wrapRect.left + margin
-  const maxRight = wrapRect.right - margin
-  if (popupRect.left < minLeft) nx += minLeft - popupRect.left
-  if (popupRect.right > maxRight) nx -= popupRect.right - maxRight
+  if (popupRect.left < safeLeft) nx += safeLeft - popupRect.left
+  if (popupRect.right > safeRight) nx -= popupRect.right - safeRight
 
-  const minTop = wrapRect.top + margin
-  const maxBottom = wrapRect.bottom - margin
-  if (popupRect.top < minTop) ny += minTop - popupRect.top
-  if (popupRect.bottom > maxBottom) ny -= popupRect.bottom - maxBottom
+  if (popupRect.top < safeTop) ny += safeTop - popupRect.top
+  if (popupRect.bottom > safeBottom) ny -= popupRect.bottom - safeBottom
 
   popupNudge.value = { x: nx, y: ny }
 }
@@ -775,56 +780,114 @@ async function addChinaBoundaryFromGeoJson() {
   }
 }
 
-/** 与 SingleTileImageryProvider 一致，防止飞出底图 */
-const IMAGERY_RECT = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+/** 与 SingleTileImageryProvider 一致：用于底图拉伸/覆盖映射 */
+let IMAGERY_RECT = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+
+function computeMarkersBoundsRect(markers, { paddingScale = 1.45 } = {}) {
+  let west = Infinity
+  let east = -Infinity
+  let south = Infinity
+  let north = -Infinity
+  let count = 0
+
+  for (const m of markers || []) {
+    if (!m || m.lon == null || m.lat == null) continue
+    const lon = Number(m.lon)
+    const lat = Number(m.lat)
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue
+    west = Math.min(west, lon)
+    east = Math.max(east, lon)
+    south = Math.min(south, lat)
+    north = Math.max(north, lat)
+    count++
+  }
+
+  if (count === 0) return Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+
+  const lonSpan = Math.max(east - west, 0.01)
+  const latSpan = Math.max(north - south, 0.01)
+  const centerLon = (west + east) / 2
+  const centerLat = (south + north) / 2
+
+  const halfLon = (lonSpan * paddingScale) / 2
+  const halfLat = (latSpan * paddingScale) / 2
+
+  return Cesium.Rectangle.fromDegrees(
+    centerLon - halfLon,
+    centerLat - halfLat,
+    centerLon + halfLon,
+    centerLat + halfLat
+  )
+}
+
+function updateBaseImageryRectangle(rect) {
+  if (!viewer || !rect) return
+  IMAGERY_RECT = rect
+  viewer.imageryLayers.removeAll()
+  const styleBgImagery = new Cesium.SingleTileImageryProvider({
+    url: bgImg,
+    rectangle: IMAGERY_RECT,
+    tileWidth: 2048,
+    tileHeight: 2048,
+    projection: webMercatorProjection
+  })
+  viewer.imageryLayers.addImageryProvider(styleBgImagery)
+  viewer.scene.requestRender()
+}
 
 /** 初始视野：全国居中、五省点位均在框内（接近设计稿整图比例） */
 function fitCameraToMarkerBounds(markers) {
   if (!viewer || !markers?.length) return
-  let west = 180
-  let east = -180
-  let south = 90
-  let north = -90
-  let count = 0
-  for (const m of markers) {
-    if (m.lon == null || m.lat == null) continue
-    west = Math.min(west, m.lon)
-    east = Math.max(east, m.lon)
-    south = Math.min(south, m.lat)
-    north = Math.max(north, m.lat)
-    count++
-  }
-  if (count === 0) return
-  const lonSpan = Math.max(east - west, 0.01)
-  const latSpan = Math.max(north - south, 0.01)
-  const padLon = Math.max(6, lonSpan * 0.48)
-  const padLat = Math.max(7, latSpan * 0.5)
-  west -= padLon
-  east += padLon
-  south -= padLat
-  north += padLat
-
-  const centerLon = (west + east) / 2
-  const centerLat = (south + north) / 2
-  const minHalfLon = 17
-  const minHalfLat = 14
-  let halfLon = Math.max((east - west) / 2, minHalfLon)
-  let halfLat = Math.max((north - south) / 2, minHalfLat)
-  west = centerLon - halfLon
-  east = centerLon + halfLon
-  south = centerLat - halfLat
-  north = centerLat + halfLat
-
-  let dest = Cesium.Rectangle.fromDegrees(west, south, east, north)
-  const clipped = Cesium.Rectangle.simpleIntersection(dest, IMAGERY_RECT)
-  if (clipped) dest = clipped
+  // 以 markers 的经纬度外包框为准，给足 padding，并同步更新底图 imagery rectangle
+  const dest = computeMarkersBoundsRect(markers, { paddingScale: 1.45 })
+  updateBaseImageryRectangle(dest)
   viewer.camera.setView({ destination: dest })
   viewer.scene.requestRender()
 }
 
 function addMarkers3857(markers) {
+  // 若 markers-popup.json 中出现大量 lon/lat 完全相同的点，会导致标牌重叠、点击/拾取无法区分。
+  // 这里对同坐标点做一个很小的环形分散（仅为可点击与弹窗定位服务）。
+  const groups = new Map()
+  for (const m of markers) {
+    const lon = Number(m?.lon)
+    const lat = Number(m?.lat)
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue
+    const key = `${lon.toFixed(4)}_${lat.toFixed(4)}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(m)
+  }
+
+  let duplicateGroupCount = 0
+  for (const [, arr] of groups) {
+    if (arr.length > 1) duplicateGroupCount++
+  }
+  if (duplicateGroupCount > 0 && typeof window !== 'undefined') {
+    console.warn(`markers-popup.json 存在 ${duplicateGroupCount} 组重复 lon/lat；已做微分散以保证可点击。请尽量修正真实经纬度。`)
+  }
+
+  const counters = new Map()
+
   markers.forEach((m) => {
-    const wm = toWebMercator(m.lon, m.lat)
+    const lon0 = Number(m.lon)
+    const lat0 = Number(m.lat)
+    let lon = lon0
+    let lat = lat0
+
+    const key = `${lon0.toFixed(4)}_${lat0.toFixed(4)}`
+    const group = groups.get(key) || []
+    if (group.length > 1) {
+      const j = counters.get(key) || 0
+      counters.set(key, j + 1)
+      const size = group.length
+      const radiusLon = 0.06 / Math.sqrt(size)
+      const radiusLat = 0.04 / Math.sqrt(size)
+      const angle = (2 * Math.PI * j) / size
+      lon = lon0 + radiusLon * Math.cos(angle)
+      lat = lat0 + radiusLat * Math.sin(angle)
+    }
+
+    const wm = toWebMercator(lon, lat)
     const position = fromWebMercator(wm.x, wm.y, 0)
 
     const id = m.id || m.name
@@ -864,23 +927,41 @@ function setupMarkerInteraction() {
 
     // 1) 优先用 drillPick 命中真实标牌实体（避免密集区靠“距离”误判）
     const picks = viewer.scene.drillPick(click.position, 64)
-    for (let i = 0; i < picks.length; i++) {
-      const picked = picks[i]
-      if (!Cesium.defined(picked) || !picked.id) continue
-      const entity = picked.id
-      if (!entity.popupPayload) continue
-      const m = entity.popupPayload
-      let pos = null
-      if (entity.position) {
-        pos = entity.position.getValue(viewer.clock.currentTime)
+    {
+      const { maxPx } = getScreenProximityPickParams()
+      const maxSq = maxPx * maxPx
+      let best = null
+      let bestScore = Infinity
+      // drillPick 可能返回多个叠加实体：取“屏幕距离最近”的那个（并对北京加权惩罚）
+      for (let i = 0; i < picks.length; i++) {
+        const picked = picks[i]
+        if (!Cesium.defined(picked) || !picked.id) continue
+        const entity = picked.id
+        if (!entity.popupPayload) continue
+        const m = entity.popupPayload
+        let pos = null
+        if (entity.position) {
+          pos = entity.position.getValue(viewer.clock.currentTime)
+        }
+        if (!pos && m.lon != null && m.lat != null) {
+          const wm = toWebMercator(m.lon, m.lat)
+          pos = fromWebMercator(wm.x, wm.y, 0)
+        }
+        if (!pos) continue
+        const c = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, pos)
+        if (!c) continue
+        const anchorY = c.y - getScreenProximityPickParams().anchorYOffset
+        const dSq = distSqScreen(screenPos, { x: c.x, y: anchorY })
+        if (dSq > maxSq) continue
+        const score = pixelDistScoreForPick(m, dSq)
+        if (score < bestScore) {
+          bestScore = score
+          best = { m, pos }
+        }
       }
-      if (!pos && m.lon != null && m.lat != null) {
-        const wm = toWebMercator(m.lon, m.lat)
-        pos = fromWebMercator(wm.x, wm.y, 0)
-      }
-      if (pos) {
-        openPopup(m, pos, screenPos)
-        setSelectedMarker(m, pos)
+      if (best) {
+        openPopup(best.m, best.pos, screenPos)
+        setSelectedMarker(best.m, best.pos)
         viewer.scene.requestRender()
         return
       }
