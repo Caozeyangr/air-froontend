@@ -104,7 +104,7 @@ const statsData = [
   position: relative;
   z-index: 1;
   /* 图标在背景左侧，给文字留出原来图标宽度+间距位置 */
-  padding-left: 62px;
+  padding-left: 87px;
 }
 
 .stat-label {
@@ -128,7 +128,6 @@ const statsData = [
 }
 
 .stat-number {
-  width: 12px;
   height: 28px;
   font-family: PingFangSC, PingFang SC;
   font-weight: 500;
@@ -145,7 +144,6 @@ const statsData = [
   font-size: 20px;
   color: #269EF5;
   line-height: 28px;
-  text-align: left;
   font-style: normal;
 }
 </style>
