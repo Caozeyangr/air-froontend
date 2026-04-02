@@ -19,3 +19,22 @@ export function applyTokenFromQuery(query) {
   localStorage.setItem('isLoggedIn', 'true')
   return true
 }
+
+/**
+ * 重定向到登录页面
+ * @param {string} reason - 重定向原因
+ */
+export function redirectToLogin(reason = '') {
+  // 清除无效的认证状态
+  localStorage.removeItem('token')
+  localStorage.removeItem('isLoggedIn')
+  
+  // 添加重定向原因到URL参数
+  let redirectUrl = '/login'
+  if (reason) {
+    redirectUrl += `?reason=${encodeURIComponent(reason)}`
+  }
+  
+  // 使用Vue Router进行重定向
+  window.location.href = redirectUrl
+}

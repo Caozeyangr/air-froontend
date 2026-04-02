@@ -3,13 +3,16 @@
     <div class="login-bg"><img :src="loginBg" alt="登录背景" class="bg-image" /></div>
     <div class="login-form">
       <h2 class="login-title">欢迎登录</h2>
+      
+      <!-- 重定向原因提示 -->
+      <div v-if="redirectReason" class="redirect-reason">{{ redirectReason }}</div>
+      
       <div class="input-group">
         <div class="input-icon">
           <img :src="admin" alt="用户" />
         </div>
         <input type="text" placeholder="请输入用户名" class="login-input" :class="{ 'input-error': usernameError }"
           v-model="username" @blur="validateUsername" @input="clearUsernameError" />
-        <!-- <div v-if="usernameError" class="error-message">{{ usernameError }}</div> -->
       </div>
       <div class="input-group">
         <div class="input-icon">
@@ -17,15 +20,14 @@
         </div>
         <input type="password" placeholder="请输入您的密码" class="login-input" :class="{ 'input-error': passwordError }"
           v-model="password" @blur="validatePassword" @input="clearPasswordError" />
-        <!-- <div v-if="passwordError" class="error-message">{{ passwordError }}</div> -->
-      </div><button class="login-button" @click="handleLogin" :disabled="isLoading">{{ isLoading ? '登录中...' : '登录'
-      }}</button>
+      </div>
+      <button class="login-button" @click="handleLogin" :disabled="isLoading">{{ isLoading ? '登录中...' : '登录' }}</button>
       <div v-if="globalError" class="global-error">{{ globalError }}</div>
     </div>
   </div>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import loginBg from '../assets/login/登录背景.png'
 import admin from '../assets/login/用户.png'
@@ -39,6 +41,15 @@ const isLoading = ref(false)
 const usernameError = ref('')
 const passwordError = ref('')
 const globalError = ref('')
+const redirectReason = ref('')
+
+// 在组件挂载时获取URL中的重定向原因
+onMounted(() => {
+  const reason = route.query.reason
+  if (reason) {
+    redirectReason.value = decodeURIComponent(reason)
+  }
+})
 
 // --- 加密算法实现 (从iframe中提取) ---
 /**
@@ -153,9 +164,14 @@ const handleLogin = async () => {
 
       // 获取重定向路径，默认为home
       const redirectPath = route.query.redirect || '/home'
-
-      // 跳转到目标页面
-      router.push(redirectPath)
+      const token = result.data.token
+      // 跳转到目标页面，将token作为参数传入
+      router.push({
+        path: redirectPath,
+        query: {
+          token: token
+        }
+      })
     } else {
       globalError.value = '登录失败: ' + (result.msg || '用户名或密码错误')
     }
@@ -207,6 +223,18 @@ const handleLogin = async () => {
   font-size: 32px;
   font-family: AlimamaShuHeiTi;
   margin-bottom: 54px;
+}
+
+.redirect-reason {
+  background-color: #FFF3CD;
+  border: 1px solid #FFEAA7;
+  color: #856404;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  text-align: center;
+  font-family: PingFang SC;
 }
 
 .input-group {

@@ -34,7 +34,7 @@ import LeftPanel from '../components/leftPanel/index.vue'
 import RightPanel from '../components/rightPanel/index.vue'
 import AIChatInput from '../components/AIChatInput.vue'
 import BottomNavigation from '../components/BottomNavigation.vue'
-import { getApiToken } from '../utils/authToken.js'
+import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 import headerImage from '../assets/header/顶部标题栏.png'
 import bgImage from '../assets/bg/底部背景2.png'
 
@@ -69,7 +69,9 @@ function updateStage() {
 }
 
 onMounted(() => {
-  updateStage()
+  // updateStage()
+  // 检查token是否存在，不存在则重定向到登录页
+  checkTokenAndRedirect()
   getDashboardStats()
   getResourceMetrics()
   window.addEventListener('resize', updateStage)
@@ -78,10 +80,21 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateStage)
 })
+// 检查token并处理重定向
+function checkTokenAndRedirect() {
+  const token = getApiToken()
+  if (!token || token.trim() === '') {
+    redirectToLogin('请先登录')
+  }
+}
+
 const getDashboardStats = async () => {
   try {
     const token = getApiToken()
-    if (!token) return
+    if (!token) {
+      redirectToLogin('请先登录')
+      return
+    }
     const response = await fetch('https://ib.cangling.cn:22002/api/v1/ars/getDashboardStats', {
       method: 'GET',
       headers: {
@@ -92,10 +105,18 @@ const getDashboardStats = async () => {
     const result = await response.json()
     if (!response.ok) {
       console.warn('getDashboardStats HTTP 错误:', response.status, result?.message || result?.code || '')
+      // 检查是否是登录权限错误
+      if (result?.message?.includes('需要登录权限') || response.status === 401) {
+        redirectToLogin('登录已过期，请重新登录')
+      }
       return
     }
     if (!result?.success) {
       console.warn('getDashboardStats 失败:', result?.message || '未知错误')
+      // 检查是否是登录权限错误
+      if (result?.message?.includes('需要登录权限')) {
+        redirectToLogin('登录已过期，请重新登录')
+      }
       return
     }
     const data = result.data || {}
@@ -111,7 +132,10 @@ const getDashboardStats = async () => {
 const getResourceMetrics = async () => {
   try {
     const token = getApiToken()
-    if (!token) return
+    if (!token) {
+      redirectToLogin('请先登录')
+      return
+    }
     const response = await fetch('https://ib.cangling.cn:22002/api/v1/ars/getResourceMetrics', {
       method: 'GET',
       headers: {
@@ -122,10 +146,18 @@ const getResourceMetrics = async () => {
     const result = await response.json()
     if (!response.ok) {
       console.warn('getResourceMetrics HTTP 错误:', response.status, result?.message || result?.code || '')
+      // 检查是否是登录权限错误
+      if (result?.message?.includes('需要登录权限') || response.status === 401) {
+        redirectToLogin('登录已过期，请重新登录')
+      }
       return
     }
     if (!result?.success) {
       console.warn('getResourceMetrics 失败:', result?.message || '未知错误')
+      // 检查是否是登录权限错误
+      if (result?.message?.includes('需要登录权限')) {
+        redirectToLogin('登录已过期，请重新登录')
+      }
       return
     }
     const data = result.data || {}
@@ -189,7 +221,7 @@ const showRadiation = computed(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 111px;
   overflow: hidden;
   z-index: 100;
   pointer-events: none;
