@@ -1,6 +1,6 @@
 <template>
   <div class="right-panel">
-    <ModelLibraryCard />
+    <ModelLibraryCard :model-count="modelCount"/>
     <ModelLibraryStats :model-count="modelCount" />
     <WorkFlowStats :workflow-list="workflowList" />
   </div>
@@ -29,12 +29,12 @@ import WorkFlowStats from './WorkFlowStats.vue'
   position: absolute;
   /* top: 100px;
   right: 22px; */
-  top: 119px;
-  right: 18px;
+  top: 100px;
+  right: 22px;
   bottom: 0;
   z-index: 50;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: end;
 }
 </style>

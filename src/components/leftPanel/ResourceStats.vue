@@ -196,15 +196,17 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   margin-bottom: 8px;
+  margin-bottom: 25px;
 }
 .title-text {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-family: SourceHanSansCN, SourceHanSansCN;
+  font-weight: 500;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 .chart-container {
   width: 388px;
-  height: 140px;
+  height: 130px;
 }
 </style>

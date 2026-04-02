@@ -3,7 +3,6 @@
     <!-- 标题栏 -->
     <div class="title-bar">
       <span class="title-text">航空智能化精细解译模型库统计</span>
-      <span class="title-count">总数 {{ modelCountDisplay }}</span>
     </div>
 
     <!-- 3D环形图 -->
@@ -49,16 +48,10 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import * as echarts from 'echarts'
 import 'echarts-gl'
 
-const props = defineProps({
-  modelCount: {
-    type: Number,
-    default: 0
-  }
-})
+
 
 const chartRef = ref(null)
 let chart = null
-const modelCountDisplay = computed(() => Number(props.modelCount || 0))
 
 const semanticTags = ['建筑物', '道路', '林地', '耕地', '水体', '蔬菜大棚', '水产养殖', '彩钢房', '光伏', '建筑工地']
 const detectionTags = ['高尔夫球场', '井盖', '灯杆', '高压线塔', '储油罐', '风力发电机', '桥梁', '固化池', '烟雾火点']
@@ -465,6 +458,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   width: 388px;
+  margin-bottom: 40px;
 }
 
 /* 标题栏 */
@@ -481,8 +475,9 @@ onBeforeUnmount(() => {
 }
 
 .title-text {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-family: SourceHanSansCN, SourceHanSansCN;
+  font-weight: 500;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }

@@ -250,17 +250,19 @@ onBeforeUnmount(() => {
 .title-bar {
   width: 100%;
   height: 32px;
-  padding: 0 16px;
-  background: linear-gradient(90deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
-  text-align: left;
-  margin-bottom: 12px;
+  padding: 0 12px 0 16px;
+  background: linear-gradient(270deg, #42ACFF 0%, rgba(211, 235, 255, 0) 100%);
+  text-align: right;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .title-text {
-  font-size: 16px;
-  font-weight: bold;
+   font-size: 18px;
+  font-family: SourceHanSansCN, SourceHanSansCN;
+  font-weight: 500;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
