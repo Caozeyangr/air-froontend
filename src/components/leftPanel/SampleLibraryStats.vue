@@ -3,6 +3,7 @@
     <!-- 标题 -->
     <div class="title-bar">
       <span class="title-text">智能解译样本库统计</span>
+      <span class="title-count">共{{ sampleCountDisplay }}个</span>
     </div>
     
     <!-- 弹幕区域 -->
@@ -27,20 +28,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import baseImage from '../../assets/left/底座2.png'
+
+const props = defineProps({
+  sampleSet: {
+    type: Array,
+    default: () => []
+  },
+  sampleCount: {
+    type: Number,
+    default: 0
+  }
+})
 
 const tags = ref([])
 const displayedTags = ref([])
+const sampleCountDisplay = computed(() => Number(props.sampleCount || 0))
 
 onMounted(async () => {
-  // 加载词条
-  const response = await fetch('/tags.json')
-  tags.value = await response.json()
-  
-  // 初始化显示词条
-  displayedTags.value = [...tags.value]
+  if (Array.isArray(props.sampleSet) && props.sampleSet.length) {
+    tags.value = [...props.sampleSet]
+    displayedTags.value = [...tags.value]
+    return
+  }
+  try {
+    const response = await fetch('/tags.json')
+    tags.value = await response.json()
+    displayedTags.value = [...tags.value]
+  } catch (e) {
+    tags.value = []
+    displayedTags.value = []
+  }
 })
+
+watch(() => props.sampleSet, (val) => {
+  if (Array.isArray(val) && val.length) {
+    tags.value = [...val]
+    displayedTags.value = [...val]
+  }
+}, { deep: true })
 
 // 获取词条样式
 function getTagStyle(index) {
@@ -87,6 +114,12 @@ function getTagStyle(index) {
   font-weight: bold;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.title-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* 弹幕容器 */

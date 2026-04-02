@@ -1,12 +1,23 @@
 <template>
   <div class="right-panel">
     <ModelLibraryCard />
-    <ModelLibraryStats />
-    <WorkFlowStats />
+    <ModelLibraryStats :model-count="modelCount" />
+    <WorkFlowStats :workflow-list="workflowList" />
   </div>
 </template>
 
 <script setup>
+defineProps({
+  modelCount: {
+    type: Number,
+    default: 0
+  },
+  workflowList: {
+    type: Array,
+    default: () => []
+  }
+})
+
 import ModelLibraryCard from './ModelLibraryCard.vue'
 import ModelLibraryStats from './ModelLibraryStats.vue'
 import WorkFlowStats from './WorkFlowStats.vue'

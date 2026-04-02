@@ -22,26 +22,51 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import * as echarts from 'echarts'
 import 'echarts-gl'
 
 const chartRef = ref(null)
 let chart = null
+let resizeHandler = null
 
-const workflowData = [
+const props = defineProps({
+  workflowList: {
+    type: Array,
+    default: () => []
+  }
+})
+
+const defaultWorkflowData = [
   { name: '智能解译工作流', value: 7, color: '#42ACFF' },
   { name: '生态评估工作流', value: 3, color: '#52C41A' },
   { name: '应急监测工作流', value: 3, color: '#36CFC9' },
   { name: '其他分类工作流', value: 5, color: '#FAAD14' }
 ]
 
-function initChart() {
-  chart = echarts.init(chartRef.value)
+const colorMap = {
+  智能解译工作流: '#42ACFF',
+  生态评估工作流: '#52C41A',
+  应急监测工作流: '#36CFC9',
+  其他分类工作流: '#FAAD14'
+}
 
-  const data = workflowData
+const workflowData = computed(() => {
+  if (!Array.isArray(props.workflowList) || !props.workflowList.length) return defaultWorkflowData
+  return props.workflowList.map((item, idx) => ({
+    name: item?.name || `工作流${idx + 1}`,
+    value: Number(item?.num ?? 0),
+    color: colorMap[item?.name] || defaultWorkflowData[idx % defaultWorkflowData.length].color
+  }))
+})
+
+function initChart() {
+  if (!chartRef.value) return
+  if (!chart) chart = echarts.init(chartRef.value)
+
+  const data = workflowData.value
   // 仅用于视觉占比/角度，不影响右侧列表显示值
-  const visualValues = [7, 5, 1, 2]
+  const visualValues = data.map((d) => Math.max(1, Number(d.value || 0)))
   const gradients = [
     new echarts.graphic.LinearGradient(0, 0, 0, 1, [
       { offset: 0, color: '#6FD3FF' },
@@ -189,20 +214,28 @@ function initChart() {
     ]
   }
 
-  chart.setOption(option)
+  chart.setOption(option, true)
 }
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', () => chart && chart.resize())
+  resizeHandler = () => chart && chart.resize()
+  window.addEventListener('resize', resizeHandler)
 })
+
+watch(workflowData, () => {
+  initChart()
+}, { deep: true })
 
 onBeforeUnmount(() => {
   if (chart) {
     chart.dispose()
     chart = null
   }
-  window.removeEventListener('resize', () => chart && chart.resize())
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
+  }
 })
 </script>
 

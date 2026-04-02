@@ -8,21 +8,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
+
+const props = defineProps({
+  gpu: { type: Number, default: 0 },
+  cpu: { type: Number, default: 0 },
+  memory: { type: Number, default: 0 }
+})
+
+function clampPct(n) {
+  const v = Number(n)
+  if (Number.isNaN(v)) return 0
+  return Math.min(100, Math.max(0, v))
+}
 
 const chartRef = ref(null)
 let chart = null
 
-// 数据源
-const data = [
-  { name: 'GPU显卡负载率', value: 80, endColor: '#A855F7' },
-  { name: 'CPU负载率', value: 70, endColor: '#42ACFF' },
-  { name: '内存负载率', value: 60, endColor: '#42ACFF' },
-]
+/** 与 getResourceMetrics 返回的 gpu / cpu / memory（负载率）对应 */
+const data = computed(() => [
+  { name: 'GPU显卡负载率', value: clampPct(props.gpu), endColor: '#A855F7' },
+  { name: 'CPU负载率', value: clampPct(props.cpu), endColor: '#42ACFF' },
+  { name: '内存负载率', value: clampPct(props.memory), endColor: '#42ACFF' }
+])
 
 function buildOption() {
-  const categories = data.map(d => d.name)
+  const rows = data.value
+  const categories = rows.map(d => d.name)
 
   return {
     backgroundColor: 'transparent',
@@ -52,7 +65,7 @@ function buildOption() {
       // 1. 背景轨道（底层淡色条）
       {
         type: 'bar',
-        data: data.map(() => ({ value: 100 })),
+        data: rows.map(() => ({ value: 100 })),
         itemStyle: {
           color: (params) => {
             const colors = ['rgba(168,85,247,0.15)', 'rgba(66,172,255,0.15)', 'rgba(34,211,238,0.15)']
@@ -69,7 +82,7 @@ function buildOption() {
       // 2. 渐变进度条（中间主视觉）
       {
         type: 'bar',
-        data: data.map((item) => ({
+        data: rows.map((item) => ({
           value: item.value,
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
@@ -90,10 +103,10 @@ function buildOption() {
       {
         type: 'scatter',
         symbolSize: 0, // 隐藏圆点，只显示文字
-        data: data.map((_, i) => [100, i]),
+        data: rows.map((_, i) => [100, i]),
         label: {
           show: true,
-          formatter: (p) => `{val|${data[p.dataIndex].value}}{unit|%}`,
+          formatter: (p) => `{val|${rows[p.dataIndex].value}}{unit|%}`,
           position: 'top',
           offset: [0, -9],
           align: 'right',
@@ -124,7 +137,7 @@ function buildOption() {
       {
         type: 'scatter',
         symbolSize: 0,
-        data: data.map((_, i) => [0, i]),
+        data: rows.map((_, i) => [0, i]),
         label: {
           show: true,
           formatter: (p) => categories[p.dataIndex],
@@ -145,13 +158,19 @@ function buildOption() {
 
 function initChart() {
   if (!chartRef.value) return
-  chart = echarts.init(chartRef.value, null, { renderer: 'canvas' })
-  chart.setOption(buildOption())
+  if (!chart) {
+    chart = echarts.init(chartRef.value, null, { renderer: 'canvas' })
+  }
+  chart.setOption(buildOption(), true)
 }
 
 function resizeChart() {
   chart?.resize()
 }
+
+watch(data, () => {
+  initChart()
+}, { deep: true })
 
 onMounted(() => {
   initChart()

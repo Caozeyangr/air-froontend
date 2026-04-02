@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { applyTokenFromQuery } from '../utils/authToken.js'
 
 // 导入页面组件
 import Login from '../view/Login.vue'
@@ -33,14 +34,21 @@ const router = createRouter({
 
 // 路由守卫：检查登录状态
 router.beforeEach((to, from, next) => {
-  // 获取登录状态
+  // iframe：父页面在地址栏带 ?token= / ?toekn= 时，必须先落库再判登录，否则会进 /login 丢掉 token
+  const hadTokenInUrl = applyTokenFromQuery(to.query)
+  if (hadTokenInUrl) {
+    const q = { ...to.query }
+    delete q.token
+    delete q.toekn
+    return next({ path: to.path, query: q, hash: to.hash, replace: true })
+  }
+
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  
-  // 如果目标路由需要认证但用户未登录，则重定向到登录页
+
   if (to.meta.requiresAuth && !isLoggedIn) {
     next({
       path: '/login',
-      query: { redirect: to.fullPath } // 保存原始目标路径，登录后跳转
+      query: { redirect: to.fullPath }
     })
   } else {
     next()

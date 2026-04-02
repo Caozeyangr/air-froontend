@@ -1,13 +1,32 @@
 <template>
   <div class="left-panel">
     <SampleLibraryCard />
-    <SampleLibraryStats />
-    <ResourceStats />
+    <SampleLibraryStats :sample-set="sampleSet" :sample-count="sampleCount" />
+    <ResourceStats
+      :gpu="resourceMetrics.gpu"
+      :cpu="resourceMetrics.cpu"
+      :memory="resourceMetrics.memory"
+    />
     <HardwareStats />
   </div>
 </template>
 
 <script setup>
+defineProps({
+  sampleSet: {
+    type: Array,
+    default: () => []
+  },
+  sampleCount: {
+    type: Number,
+    default: 0
+  },
+  resourceMetrics: {
+    type: Object,
+    default: () => ({ cpu: 0, memory: 0, gpu: 0 })
+  }
+})
+
 import SampleLibraryCard from './SampleLibraryCard.vue'
 import SampleLibraryStats from './SampleLibraryStats.vue'
 import ResourceStats from './ResourceStats.vue'

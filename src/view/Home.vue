@@ -6,8 +6,15 @@
         <header class="app-header">
           <img :src="headerImage" alt="顶部标题栏" class="header-image" />
         </header>
-        <LeftPanel />
-        <RightPanel />
+        <LeftPanel
+          :sample-set="dashboardStats.sampleSet"
+          :sample-count="dashboardStats.sampleCount"
+          :resource-metrics="resourceMetrics"
+        />
+        <RightPanel
+          :model-count="dashboardStats.modelCount"
+          :workflow-list="dashboardStats.workflowList"
+        />
         <main class="app-main">
           <CesiumViewer />
           <BeijingRadiationMap v-if="showRadiation" class="echarts-overlay" />
@@ -20,13 +27,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, reactive } from 'vue'
 import CesiumViewer from '../components/CesiumViewer.vue'
 import BeijingRadiationMap from '../components/BeijingRadiationMap.vue'
 import LeftPanel from '../components/leftPanel/index.vue'
 import RightPanel from '../components/rightPanel/index.vue'
 import AIChatInput from '../components/AIChatInput.vue'
 import BottomNavigation from '../components/BottomNavigation.vue'
+import { getApiToken } from '../utils/authToken.js'
 import headerImage from '../assets/header/顶部标题栏.png'
 import bgImage from '../assets/bg/底部背景2.png'
 
@@ -35,6 +43,17 @@ const STAGE_H = 960
 const shift = ref({ x: 0, y: 0 })
 const scaleRef = ref(1)
 const posRef = ref({ left: 0, top: 0 })
+const dashboardStats = reactive({
+  sampleSet: [],
+  sampleCount: 0,
+  modelCount: 0,
+  workflowList: []
+})
+const resourceMetrics = reactive({
+  cpu: 0,
+  memory: 0,
+  gpu: 0
+})
 
 function updateStage() {
   const vw = window.innerWidth
@@ -52,6 +71,7 @@ function updateStage() {
 onMounted(() => {
   updateStage()
   getDashboardStats()
+  getResourceMetrics()
   window.addEventListener('resize', updateStage)
 })
 
@@ -59,21 +79,64 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateStage)
 })
 const getDashboardStats = async () => {
-  // 大屏数据-统计信息接口
-  const token = localStorage.getItem('token')
-  const response = await fetch('https://ib.cangling.cn:22002/api/v1/ars/getDashboardStats', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'API-TOKEN': token
-    },
-  })
-  const result = await response.json()
-
-  if (result.success) {
-    console.log(result.data,'1111')
+  try {
+    const token = getApiToken()
+    if (!token) return
+    const response = await fetch('https://ib.cangling.cn:22002/api/v1/ars/getDashboardStats', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': token
+      }
+    })
+    const result = await response.json()
+    if (!response.ok) {
+      console.warn('getDashboardStats HTTP 错误:', response.status, result?.message || result?.code || '')
+      return
+    }
+    if (!result?.success) {
+      console.warn('getDashboardStats 失败:', result?.message || '未知错误')
+      return
+    }
+    const data = result.data || {}
+    dashboardStats.sampleSet = Array.isArray(data.sampleSet) ? data.sampleSet : []
+    dashboardStats.sampleCount = Number(data.sampleCount || 0)
+    dashboardStats.modelCount = Number(data.modelCount || 0)
+    dashboardStats.workflowList = Array.isArray(data.workflowList) ? data.workflowList : []
+  } catch (e) {
+    console.warn('getDashboardStats 请求异常', e)
   }
 }
+
+const getResourceMetrics = async () => {
+  try {
+    const token = getApiToken()
+    if (!token) return
+    const response = await fetch('https://ib.cangling.cn:22002/api/v1/ars/getResourceMetrics', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': token
+      }
+    })
+    const result = await response.json()
+    if (!response.ok) {
+      console.warn('getResourceMetrics HTTP 错误:', response.status, result?.message || result?.code || '')
+      return
+    }
+    if (!result?.success) {
+      console.warn('getResourceMetrics 失败:', result?.message || '未知错误')
+      return
+    }
+    const data = result.data || {}
+    resourceMetrics.cpu = Number(data.cpu ?? 0)
+    resourceMetrics.memory = Number(data.memory ?? 0)
+    resourceMetrics.gpu = Number(data.gpu ?? 0)
+  } catch (e) {
+    console.warn('getResourceMetrics 请求异常', e)
+  }
+}
+
 const stageStyle = computed(() => ({
   width: `${STAGE_W}px`,
   height: `${STAGE_H}px`,
