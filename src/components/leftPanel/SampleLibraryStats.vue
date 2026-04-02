@@ -193,7 +193,7 @@ function getTagStyle(index) {
 
 /* 底座图片 */
 .base-image {
-  width: 100%;
+  width: 90%;
   height: 60px;
   object-fit: contain;
 }
