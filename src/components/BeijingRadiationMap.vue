@@ -142,6 +142,13 @@ function getScreenPx(marker, w, h) {
 async function init() {
   if (!chartRef.value) return
   chart = echarts.init(chartRef.value, null, { renderer: 'canvas' })
+  const dom = chart.getDom()
+  if (dom) {
+    dom.style.pointerEvents = 'none'
+    dom.querySelectorAll('canvas').forEach((c) => {
+      c.style.pointerEvents = 'none'
+    })
+  }
 
   if (typeof window !== 'undefined') {
     cesiumViewer = window.__airCesiumViewer || null
@@ -214,13 +221,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.bj-map {
+/* 必须穿透到子页面 canvas：辐射仅展示，不参与点击（否则会挡 Cesium 点位拾取） */
+.bj-map,
+.bj-map__chart {
   position: absolute;
   inset: 0;
-}
-.bj-map__chart {
   width: 100%;
   height: 100%;
+  pointer-events: none !important;
 }
 </style>
 

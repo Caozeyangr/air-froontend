@@ -1,5 +1,5 @@
 <template>
-  <div class="cesium-wrap">
+  <div ref="cesiumWrapRef" class="cesium-wrap">
     <div ref="cesiumContainer" class="cesium-container"></div>
     <!-- 点位选中态虚线框（跟随屏幕坐标） -->
     <div
@@ -11,7 +11,13 @@
     <!-- 点位弹窗（HTML 浮层，跟随地图坐标） -->
     <div
       v-show="popupVisible"
+      ref="popupRef"
       class="marker-popup"
+      :class="{
+        'marker-popup--right': popupAlign === 'right',
+        'marker-popup--bottom': popupPlacement === 'bottom',
+        'marker-popup--top': popupPlacement === 'top'
+      }"
       :style="popupWrapStyle"
       @click.stop
     >
@@ -38,11 +44,12 @@
   </div>
 </template>
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, nextTick } from 'vue'
 import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import bgImg from '@/assets/content/背景.png'
 
+const cesiumWrapRef = ref(null)
 const cesiumContainer = ref(null)
 let viewer = null
 let clickHandler = null
@@ -63,6 +70,12 @@ const popupData = reactive({
   images: []
 })
 const popupScreen = ref({ x: 0, y: 0 })
+/** 弹窗在锚点左侧或右侧，避免贴边或与标牌重叠 */
+const popupAlign = ref('left')
+/** 弹窗在地图容器内的像素校正，保证不裁切 */
+const popupNudge = ref({ x: 0, y: 0 })
+const popupRef = ref(null)
+const popupPlacement = ref('side')
 /** 当前用于定位的笛卡尔坐标（随相机更新重算屏幕位置） */
 let activePopupPosition = null
 /** pick 失败时用于弹窗锚点的屏幕坐标（避免 translate 到视口外） */
@@ -83,10 +96,65 @@ const selectedBoxStyle = computed(() => ({
 /** marker id -> { billboardEntity } */
 const markerEntities = new Map()
 
-const popupWrapStyle = computed(() => ({
-  left: `${popupScreen.value.x}px`,
-  top: `${popupScreen.value.y}px`
-}))
+const POPUP_W = 446
+const POPUP_H_EST = 340
+const POPUP_GAP = 40
+const POPUP_ANCHOR_UP = 28
+const POPUP_BOTTOM_GAP = 14
+const POPUP_TOP_GAP = 14
+
+function refreshPopupNudge() {
+  const wrap = cesiumWrapRef.value
+  const popupEl = popupRef.value
+  if (!popupVisible.value || !wrap || !popupEl) return
+
+  const wrapRect = wrap.getBoundingClientRect()
+  const popupRect = popupEl.getBoundingClientRect()
+  const margin = 12
+
+  let nx = popupNudge.value.x
+  let ny = popupNudge.value.y
+
+  const minLeft = wrapRect.left + margin
+  const maxRight = wrapRect.right - margin
+  if (popupRect.left < minLeft) nx += minLeft - popupRect.left
+  if (popupRect.right > maxRight) nx -= popupRect.right - maxRight
+
+  const minTop = wrapRect.top + margin
+  const maxBottom = wrapRect.bottom - margin
+  if (popupRect.top < minTop) ny += minTop - popupRect.top
+  if (popupRect.bottom > maxBottom) ny -= popupRect.bottom - maxBottom
+
+  popupNudge.value = { x: nx, y: ny }
+}
+
+const popupWrapStyle = computed(() => {
+  const { x: nx, y: ny } = popupNudge.value
+  if (popupPlacement.value === 'bottom') {
+    return {
+      left: `${popupScreen.value.x}px`,
+      top: `${popupScreen.value.y}px`,
+      transform: `translate(calc(-50% + ${nx}px), ${POPUP_BOTTOM_GAP + ny}px)`
+    }
+  }
+  if (popupPlacement.value === 'top') {
+    return {
+      left: `${popupScreen.value.x}px`,
+      top: `${popupScreen.value.y}px`,
+      transform: `translate(calc(-50% + ${nx}px), calc(-100% - ${POPUP_TOP_GAP}px + ${ny}px))`
+    }
+  }
+
+  const tr =
+    popupAlign.value === 'right'
+      ? `translate(${POPUP_GAP + nx}px, calc(-50% - ${POPUP_ANCHOR_UP}px + ${ny}px))`
+      : `translate(calc(-100% - ${POPUP_GAP}px + ${nx}px), calc(-50% - ${POPUP_ANCHOR_UP}px + ${ny}px))`
+  return {
+    left: `${popupScreen.value.x}px`,
+    top: `${popupScreen.value.y}px`,
+    transform: tr
+  }
+})
 
 const webMercatorProjection = new Cesium.WebMercatorProjection()
 
@@ -133,36 +201,65 @@ function ringLonLatToPositions(ring) {
   return positions
 }
 
+function updatePopupAlignForScreenX(screenX) {
+  if (popupPlacement.value === 'bottom') return
+  const wrap = cesiumWrapRef.value
+  const W = wrap?.clientWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1920)
+  const threshold = Math.max(POPUP_W + POPUP_GAP + 24, W * 0.36)
+  popupAlign.value = screenX < threshold ? 'right' : 'left'
+}
+
 function updatePopupScreenPosition() {
   if (!viewer || !activePopupPosition) return
   const scene = viewer.scene
   const c = Cesium.SceneTransforms.wgs84ToWindowCoordinates(scene, activePopupPosition)
   if (c) {
     popupScreen.value = { x: c.x, y: c.y }
+    updatePopupAlignForScreenX(c.x)
+    refreshPopupNudge()
   } else if (popupAnchorScreenFallback) {
     popupScreen.value = {
       x: popupAnchorScreenFallback.x,
       y: popupAnchorScreenFallback.y
     }
+    updatePopupAlignForScreenX(popupAnchorScreenFallback.x)
+    refreshPopupNudge()
   }
 }
 
 function openPopup(payload, worldPosition, clickScreen) {
-  popupData.title = payload.title || payload.name || ''
-  popupData.summary = payload.summary || payload.title || payload.name || '暂无详细介绍'
-  popupData.images = Array.isArray(payload.images) ? [...payload.images] : []
+  const id = payload?.id || payload?.name || ''
+  const isBayannur = id === 'bayannur' || payload?.name === '巴彦淖尔'
+  const isWanning = id === 'wanning' || payload?.name === '海南万宁'
+
+  popupPlacement.value = isWanning ? 'top' : isBayannur ? 'bottom' : 'side'
+  popupNudge.value = { x: 0, y: 0 }
+
+  popupData.title = payload?.title || payload?.name || ''
+  popupData.summary = payload?.summary || payload?.title || payload?.name || '暂无详细介绍'
+  popupData.images = Array.isArray(payload?.images) ? [...payload.images] : []
+
   activePopupPosition = worldPosition
   popupAnchorScreenFallback =
     clickScreen != null
       ? { x: clickScreen.x, y: clickScreen.y }
       : null
+
   const c = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, worldPosition)
   if (c) {
     popupScreen.value = { x: c.x, y: c.y }
+    updatePopupAlignForScreenX(c.x)
   } else if (popupAnchorScreenFallback) {
     popupScreen.value = { ...popupAnchorScreenFallback }
+    updatePopupAlignForScreenX(popupAnchorScreenFallback.x)
   }
+
   popupVisible.value = true
+  // 让 DOM 先渲染出来，再用真实尺寸做边界夹紧
+  nextTick(() => {
+    refreshPopupNudge()
+    requestAnimationFrame(() => refreshPopupNudge())
+  })
 }
 
 function closePopup() {
@@ -183,6 +280,55 @@ function distSqScreen(a, b) {
   const dx = a.x - b.x
   const dy = a.y - b.y
   return dx * dx + dy * dy
+}
+
+/** 华北密集区：北京常在屏幕中心，命中框易与营口/东营重叠；对北京用更小框 + 排序时加权，避免「略近北京」抢走点击 */
+function isBeijingMarker(m) {
+  return m && (m.id === 'beijing' || m.name === '北京')
+}
+
+/**
+ * 各点位独立缩放命中框（0~1）：北京最小；营口/东营次之；巴彦淖尔、万宁相距远可略大。
+ * 目标：点谁出谁，重叠区按「加权距离」判给更近的标牌。
+ */
+function getHitboxSizeFactor(m) {
+  if (!m) return 0.8
+  const id = m.id || ''
+  if (id === 'beijing' || m.name === '北京') return 0.34
+  if (id === 'yingkou-bayuquan' || id === 'dongying') return 0.58
+  if (id === 'bayannur' || id === 'wanning') return 0.82
+  return 0.75
+}
+
+/** 用于排序/最近邻：北京强惩罚，其它点按真实距离比较 */
+function pixelDistScoreForPick(m, dSq) {
+  // 北京在远视图时更容易出现在屏幕中心，适当加权但不要过大，避免误伤真实点击
+  if (isBeijingMarker(m)) return dSq * 2
+  return dSq
+}
+
+/** 相机越远，标牌在屏幕上越小，drillPick 易失败；放大屏幕命中半径 */
+function getScreenProximityPickParams() {
+  if (!viewer) {
+    return { maxPx: 240, halfW: 48, halfH: 28, anchorYOffset: 24 }
+  }
+  let h = 0
+  try {
+    const carto = viewer.camera.positionCartographic
+    if (carto) h = carto.height
+  } catch (e) {
+    h = 0
+  }
+  if (!Number.isFinite(h) || h <= 0) h = 5e6
+  // 远视图下标牌在屏幕上更“挤”，命中阈值收紧；同时尽量保持能点到
+  const maxPx = Cesium.Math.clamp(1.1e6 / Math.sqrt(h), 140, 240)
+  const boxScale = Cesium.Math.clamp(2.2e6 / h, 1, 1.35)
+  return {
+    maxPx,
+    halfW: 52 * boxScale,
+    halfH: 30 * boxScale,
+    anchorYOffset: 24
+  }
 }
 
 async function createBlueMarkerIconDataUrlFromOrange(url) {
@@ -417,44 +563,50 @@ function setSelectedMarker(m, worldPosition) {
  * 用屏幕距离在点位/箭头/标签附近命中，作为可靠回退。
  */
 function tryOpenPopupByScreenProximity(clickScreen) {
-  const maxPx = 160
+  const { maxPx, anchorYOffset } = getScreenProximityPickParams()
   const maxSq = maxPx * maxPx
   let bestM = null
   let bestWorld = null
-  let bestD = Infinity
+  let bestRawSq = Infinity
+  let bestScore = Infinity
 
   for (let mi = 0; mi < markersForPick.length; mi++) {
     const m = markersForPick[mi]
+    if (m?.lon == null || m?.lat == null) continue
     const wm = toWebMercator(m.lon, m.lat)
     const p0 = fromWebMercator(wm.x, wm.y, 0)
     const sc = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, p0)
     if (!sc) continue
-    // 先做 hitbox 命中（标牌 100x48，锚点在底部中心）
-    const left = sc.x - 52
-    const right = sc.x + 52
-    const top = sc.y - 52
-    const bottom = sc.y + 8
-    if (clickScreen.x >= left && clickScreen.x <= right && clickScreen.y >= top && clickScreen.y <= bottom) {
-      openPopup(m, p0, clickScreen)
-      setSelectedMarker(m, p0)
-      viewer.scene.requestRender()
-      return true
+    const ax = sc.x
+    // 多锚点：同一标牌的可点击区域在上下（标牌箭头/中部/标签文字），远距离时单一锚点容易偏差
+    const offs = [
+      anchorYOffset,
+      anchorYOffset - 16,
+      anchorYOffset + 10
+    ].map((v) => Math.max(0, v))
+
+    let dSq = Infinity
+    for (const off of offs) {
+      const ay = sc.y - off
+      dSq = Math.min(dSq, distSqScreen(clickScreen, { x: ax, y: ay }))
     }
-    // 再退化为中心距离命中
-    const d = distSqScreen(clickScreen, { x: sc.x, y: sc.y - 24 })
-    if (d < bestD) {
-      bestD = d
+
+    const score = pixelDistScoreForPick(m, dSq)
+    if (score < bestScore) {
+      bestScore = score
+      bestRawSq = dSq
       bestM = m
       bestWorld = p0
     }
   }
 
-  if (bestM != null && bestWorld != null && bestD <= maxSq) {
+  if (bestM != null && bestWorld != null && bestRawSq <= maxSq) {
     openPopup(bestM, bestWorld, clickScreen)
     setSelectedMarker(bestM, bestWorld)
     viewer.scene.requestRender()
     return true
   }
+
   return false
 }
 
@@ -623,6 +775,53 @@ async function addChinaBoundaryFromGeoJson() {
   }
 }
 
+/** 与 SingleTileImageryProvider 一致，防止飞出底图 */
+const IMAGERY_RECT = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+
+/** 初始视野：全国居中、五省点位均在框内（接近设计稿整图比例） */
+function fitCameraToMarkerBounds(markers) {
+  if (!viewer || !markers?.length) return
+  let west = 180
+  let east = -180
+  let south = 90
+  let north = -90
+  let count = 0
+  for (const m of markers) {
+    if (m.lon == null || m.lat == null) continue
+    west = Math.min(west, m.lon)
+    east = Math.max(east, m.lon)
+    south = Math.min(south, m.lat)
+    north = Math.max(north, m.lat)
+    count++
+  }
+  if (count === 0) return
+  const lonSpan = Math.max(east - west, 0.01)
+  const latSpan = Math.max(north - south, 0.01)
+  const padLon = Math.max(6, lonSpan * 0.48)
+  const padLat = Math.max(7, latSpan * 0.5)
+  west -= padLon
+  east += padLon
+  south -= padLat
+  north += padLat
+
+  const centerLon = (west + east) / 2
+  const centerLat = (south + north) / 2
+  const minHalfLon = 17
+  const minHalfLat = 14
+  let halfLon = Math.max((east - west) / 2, minHalfLon)
+  let halfLat = Math.max((north - south) / 2, minHalfLat)
+  west = centerLon - halfLon
+  east = centerLon + halfLon
+  south = centerLat - halfLat
+  north = centerLat + halfLat
+
+  let dest = Cesium.Rectangle.fromDegrees(west, south, east, north)
+  const clipped = Cesium.Rectangle.simpleIntersection(dest, IMAGERY_RECT)
+  if (clipped) dest = clipped
+  viewer.camera.setView({ destination: dest })
+  viewer.scene.requestRender()
+}
+
 function addMarkers3857(markers) {
   markers.forEach((m) => {
     const wm = toWebMercator(m.lon, m.lat)
@@ -663,7 +862,8 @@ function setupMarkerInteraction() {
     const screenPos = new Cesium.Cartesian2(click.position.x, click.position.y)
     viewer.scene.requestRender()
 
-    const picks = viewer.scene.drillPick(click.position, 24)
+    // 1) 优先用 drillPick 命中真实标牌实体（避免密集区靠“距离”误判）
+    const picks = viewer.scene.drillPick(click.position, 64)
     for (let i = 0; i < picks.length; i++) {
       const picked = picks[i]
       if (!Cesium.defined(picked) || !picked.id) continue
@@ -685,9 +885,12 @@ function setupMarkerInteraction() {
         return
       }
     }
+
+    // 2) drillPick 失败时，再用屏幕距离回退（保证缩小后仍可点）
     if (tryOpenPopupByScreenProximity(screenPos)) {
       return
     }
+
     closePopup()
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
@@ -748,21 +951,9 @@ onMounted(async () => {
   viewer.scene.screenSpaceCameraController.enableZoom = true
   viewer.scene.screenSpaceCameraController.enableTilt = false
   viewer.scene.screenSpaceCameraController.enableLook = false
-  // 保持可拖拽，同时允许缩放到可见中国全图范围
-  viewer.scene.screenSpaceCameraController.maximumZoomDistance = 12000000
-  viewer.scene.screenSpaceCameraController.minimumZoomDistance = 350000
-
-  const bayannurCoords = { lon: 107.386, lat: 40.751 }
-  const bayannur3857 = toWebMercator(bayannurCoords.lon, bayannurCoords.lat)
-  viewer.camera.flyTo({
-    destination: fromWebMercator(bayannur3857.x, bayannur3857.y, 3000000),
-    orientation: {
-      heading: Cesium.Math.toRadians(0),
-      pitch: Cesium.Math.toRadians(-90),
-      roll: 0
-    },
-    duration: 0
-  })
+  // 可继续缩小（滚轮向外），便于一眼看全所有点位；数值为相机距地表高度量级（米）
+  viewer.scene.screenSpaceCameraController.maximumZoomDistance = 120000000
+  viewer.scene.screenSpaceCameraController.minimumZoomDistance = 180000
 
   viewer.cesiumWidget.creditContainer.style.display = 'none'
 
@@ -793,14 +984,16 @@ onMounted(async () => {
   }
   if (!markers.length) {
     markers = [
-      { name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [] },
-      { name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [] },
-      { name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [] },
-      { name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [] }
+      { id: 'beijing', name: '北京', lon: 116.4074, lat: 39.9042, title: '北京', summary: '', images: [] },
+      { id: 'bayannur', name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [] },
+      { id: 'yingkou-bayuquan', name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [] },
+      { id: 'dongying', name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [] },
+      { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [] }
     ]
   }
   markersForPick = markers
   addMarkers3857(markers)
+  fitCameraToMarkerBounds(markers)
   setupMarkerInteraction()
 })
 
@@ -849,17 +1042,19 @@ onUnmounted(() => {
   border-radius: 2px;
   box-sizing: border-box;
   pointer-events: none;
+  display: none; /* 去掉虚线选中框 */
 }
 
-/* 弹窗在点位左侧；锚点取右侧中心对齐点位 */
+/* 图2：毛玻璃 + 渐变描边；位置由 popupWrapStyle 的 transform 控制 */
 .marker-popup {
   position: absolute;
-  z-index: 1200;
+  z-index: 5000;
   width: 446px;
-  height: 171px;
+  min-height: 171px;
+  max-height: min(420px, 72vh);
+  height: auto;
   padding: 8px 10px;
   box-sizing: border-box;
-  transform: translate(calc(-100% - 14px), -50%);
   background: rgba(255, 255, 255, 0.2);
   border-radius: 12px 0 12px 12px;
   border: 1px solid;
@@ -868,6 +1063,20 @@ onUnmounted(() => {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.marker-popup--right {
+  border-radius: 0 12px 12px 12px;
+}
+
+.marker-popup--bottom {
+  border-radius: 12px;
+}
+
+.marker-popup--top {
+  border-radius: 12px 12px 0 12px;
 }
 
 .marker-popup-close {
@@ -890,10 +1099,11 @@ onUnmounted(() => {
 
 .marker-popup-body {
   display: flex;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   gap: 10px;
-  align-items: flex-start;
-  overflow: hidden; /* 让内部滚动区生效 */
+  align-items: stretch;
+  overflow: hidden;
 }
 
 /* 有配图时：左图右文（接近设计稿） */
@@ -907,8 +1117,9 @@ onUnmounted(() => {
   gap: 8px;
   flex: 0 0 120px;
   width: 120px;
-  height: 163px;
-  overflow: hidden;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .marker-popup-img {
@@ -924,10 +1135,13 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
   width: 308px;
-  height: 171px;
+  max-height: 163px;
+  height: auto;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 6px;
-  scrollbar-gutter: stable both-edges;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;            /* Firefox */
   scrollbar-color: rgba(154, 183, 213, 0.9) rgba(255, 255, 255, 0.25);
 }
@@ -937,11 +1151,13 @@ onUnmounted(() => {
   font-family: PingFangSC, PingFang SC, sans-serif;
   font-weight: 400;
   font-size: 14px;
-  color: #515E70;
+  color: #515e70;
   line-height: 22px;
   text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
+  opacity: 1;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* WebKit scrollbar（Chrome/Edge） */
