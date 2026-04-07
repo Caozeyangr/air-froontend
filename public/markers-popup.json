@@ -6,59 +6,254 @@
     "lat": 39.9042,
     "title": "北京",
     "summary": "",
-    "images": []
+    "images": [],
+    "aircraftModel": "",
+    "flightTime": "",
+    "payloadType": "",
+    "missionType": "",
+    "description": "",
+    "operationParams": "",
+    "surfaceFeatures": ""
   },
   {
     "id": "bayannur",
     "name": "巴彦淖尔",
-    "lon": 107.386,
-    "lat": 40.751,
+    "lon": 107.416958,
+    "lat": 40.757456,
     "title": "巴彦淖尔",
     "summary": " 内蒙古巴彦淖尔试验圆满完成，重点关注乌梁素海生态监测。任务运用多维度SAR系统获取全极化数据，采用AMMHS全谱段成像仪获取可见-近红外数据，覆盖乌梁素海及周边区域，旨在监测湖泊水质、生态状况及环境变化。数据将为乌梁素海生态修复、水资源管理及区域可持续发展提供科学支撑。",
-    "images": []
+    "images": [
+      "/map/popup/bayan.png",
+      "/map/popup/bayan.jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2024年8月",
+    "payloadType": "多维度SARADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L波段 0.2m（大面阵） 1.0m(全谱段)1500平",
+    "surfaceFeatures": "湿地 农田"
   },
   {
-    "id": "yingkou-bayuquan",
-    "name": "营口鲅鱼圈",
-    "lon": 122.235,
-    "lat": 40.667,
-    "title": "营口鲅鱼圈",
+    "id": "liaoning-bayuquan",
+    "name": "辽宁鲅鱼圈",
+    "lon": 122.131944,
+    "lat": 40.268611,
+    "title": "辽宁鲅鱼圈",
     "summary": "在辽宁鲅鱼圈测区，多维度SAR载荷航空遥感监测任务顺利完成。此次任务获取了该海陆交界区的高分辨率SAR数据，涵盖港口、城市、农田等多样地物，旨在开展目标检测、变化检测、海冰监测等研究，展示区域发展与环境变化。任务使用多维度SAR系统等，获取了全极化数据，为区域可持续发展提供科学支撑。",
     "images": [
-      "/map/popup/营口鲅鱼圈.png"
-    ]
+      "/map/popup/辽宁鲅鱼圈.png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2022年2月-4月",
+    "payloadType": "多维度SAR载荷 三线阵相机",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C波段 1.0米S/L波段 0.1米/0.2米（三线阵)",
+    "surfaceFeatures": "海冰 海岸带 港口 城市"
+  },
+    {
+    "id": "liaoning-yingkou",
+    "name": "辽宁营口",
+    "lon": 122.235414,
+    "lat": 40.667012,
+    "title": "辽宁营口",
+    "summary": "辽宁营口试验圆满完成，聚焦海陆交界区多维度监测。任务运用多维度SAR系统、全谱段成像仪获取全极化数据，覆盖港口、城市、农田等多样地物，旨在开展目标检测、变化检测、海冰监测等研究。数据将为营口区域发展规划、生态保护及海洋资源管理提供科学支撑，助力区域可持续发展。",
+    "images": [
+      "/map/popup/liaoningyingkou(1).png",
+      "/map/popup/liaoningyingkou(2).png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2023年8月（SAR）2023年1月（大面阵）2023年10月（全谱段）",
+    "payloadType": "多维度SAR、大面阵、全谱段成像仪AMMHS",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L波段 0.2m（大面阵）1.26m(全谱段)5120平",
+    "surfaceFeatures": "滩涂 油田 道路"
   },
   {
-    "id": "laohugou",
-    "name": "老虎沟12号冰川、七一冰川、宁缠河3号冰川",
-    "lon": 118.505,
-    "lat": 37.438,
-    "title": "老虎沟12号冰川、七一冰川、宁缠河3号冰川",
+    "id": "laohugou_laohugou12",
+    "name": "老虎沟12号冰川",
+    "lon": 96.516667,
+    "lat": 39.416667,
+    "title": "老虎沟12号冰川（甘肃省典型冰川航空冰雷达透视探测）",
     "summary": "该项目属于2024年度甘肃省水资源基础调查项目（第一批），主要基于国家重大科技基础设施“航空遥感系统”建设的新舟60遥感飞机和奖状遥感飞机，搭载航空冰雷达（测深模式和层析成像模式）与三维激光雷达进行冰川透视探测。这是我国首次基于航空冰雷达技术开展典型冰川（含老虎沟12号冰川、七一冰川、宁缠河3号冰川）储量调查。该项工作可以为河西走廊各流域水资源管理和决策、祁连山生态环境保护与区域可持续发展等提供关键数据支撑。",
     "images": [
       "/map/popup/laohugou(1).png",
       "/map/popup/laohugou(2).png",
       "/map/popup/laohugou(3).png",
       "/map/popup/laohugou(4).png"
-    ]
+    ],
+    "aircraftModel": "新舟60遥感飞机和奖状遥感飞机",
+    "flightTime": "2024年9月至11月",
+    "payloadType": "航空冰雷达（测深模式和层析成像模式）与三维激光雷达",
+    "missionType": "2024年度甘肃省典型冰川航空冰雷达透视探测项目",
+    "description": "",
+    "operationParams": "共飞了4个架次，影像分辨率是0.2m，点密度2个点/平方米",
+    "surfaceFeatures": "冰川"
+  },
+  {
+    "id": "laohugou_qiyi",
+    "name": "七一冰川",
+    "lon": 97.718056,
+    "lat": 39.276389,
+    "title": "七一冰川（甘肃省典型冰川航空冰雷达透视探测）",
+    "summary": "该项目属于2024年度甘肃省水资源基础调查项目（第一批），主要基于国家重大科技基础设施“航空遥感系统”建设的新舟60遥感飞机和奖状遥感飞机，搭载航空冰雷达（测深模式和层析成像模式）与三维激光雷达进行冰川透视探测。这是我国首次基于航空冰雷达技术开展典型冰川（含老虎沟12号冰川、七一冰川、宁缠河3号冰川）储量调查。该项工作可以为河西走廊各流域水资源管理和决策、祁连山生态环境保护与区域可持续发展等提供关键数据支撑。",
+    "images": [
+      "/map/popup/laohugou(1).png",
+      "/map/popup/laohugou(2).png",
+      "/map/popup/laohugou(3).png",
+      "/map/popup/laohugou(4).png"
+    ],
+    "aircraftModel": "新舟60遥感飞机和奖状遥感飞机",
+    "flightTime": "2024年9月至11月",
+    "payloadType": "航空冰雷达（测深模式和层析成像模式）与三维激光雷达",
+    "missionType": "2024年度甘肃省典型冰川航空冰雷达透视探测项目",
+    "description": "",
+    "operationParams": "共飞了4个架次，影像分辨率是0.2m，点密度2个点/平方米",
+    "surfaceFeatures": "冰川"
+  },
+  {
+    "id": "laohugou_ningchanhe3",
+    "name": "宁缠河3号冰川",
+    "lon": 101.916667,
+    "lat": 37.85,
+    "title": "宁缠河3号冰川（甘肃省典型冰川航空冰雷达透视探测）",
+    "summary": "该项目属于2024年度甘肃省水资源基础调查项目（第一批），主要基于国家重大科技基础设施“航空遥感系统”建设的新舟60遥感飞机和奖状遥感飞机，搭载航空冰雷达（测深模式和层析成像模式）与三维激光雷达进行冰川透视探测。这是我国首次基于航空冰雷达技术开展典型冰川（含老虎沟12号冰川、七一冰川、宁缠河3号冰川）储量调查。该项工作可以为河西走廊各流域水资源管理和决策、祁连山生态环境保护与区域可持续发展等提供关键数据支撑。",
+    "images": [
+      "/map/popup/laohugou(1).png",
+      "/map/popup/laohugou(2).png",
+      "/map/popup/laohugou(3).png",
+      "/map/popup/laohugou(4).png"
+    ],
+    "aircraftModel": "新舟60遥感飞机和奖状遥感飞机",
+    "flightTime": "2024年9月至11月",
+    "payloadType": "航空冰雷达（测深模式和层析成像模式）与三维激光雷达",
+    "missionType": "2024年度甘肃省典型冰川航空冰雷达透视探测项目",
+    "description": "",
+    "operationParams": "共飞了4个架次，影像分辨率是0.2m，点密度2个点/平方米",
+    "surfaceFeatures": "冰川"
+  },
+  {
+    "id": "hebeishengsaihanba",
+    "name": "河北省塞罕坝机械林场",
+    "lon": 117.262359,
+    "lat": 42.411578,
+    "title": "河北省塞罕坝机械林场",
+    "summary": "中国科学院空天信息创新研究院（空天院）联合中国科学院国家空间科学中心（空间中心）、国家林业和草原局林草调查规划院等单位在河北省塞罕坝机械林场、御道口牧场等地组织实施“植被与土壤的水分遥感试验”，这是国际上首次基于航空平台开展土壤—植被—大气连续体水分透视遥感试验。该试验是由空间中心牵头组织的“滦河流域天空地多尺度遥感联合试验”的重要组成部分。",
+    "images": [
+      "/map/popup/hebeisaihanba(1).png",
+      "/map/popup/hebeisaihanba(2).png"
+    ],
+    "aircraftModel": "新舟60飞机",
+    "flightTime": "2024年8月",
+    "payloadType": "航空遥感系统搭载的三频段（L/S/C）多角度成像微波辐射计、三频段（Ku/K/Ka）全极化扫描微波辐射计、机载激光扫描仪系统以及全谱段高光谱成像仪4种航空载荷",
+    "missionType": "植被与土壤的水分遥感试验",
+    "description": "",
+    "operationParams": "共飞了4个架次，影像分辨率是0.2m，点密度2个点/平方米",
+    "surfaceFeatures": "山地、河流、森林、农田、湖泊、草地、沙地"
+  },
+  {
+    "id": "hebeishengsaihanba_yudaokou",
+    "name": "御道口牧场",
+    "lon": 117.097217,
+    "lat": 42.275342,
+    "title": "御道口牧场",
+    "summary": "中国科学院空天信息创新研究院（空天院）联合中国科学院国家空间科学中心（空间中心）、国家林业和草原局林草调查规划院等单位在河北省塞罕坝机械林场、御道口牧场等地组织实施“植被与土壤的水分遥感试验”。（待你用图3中御道口牧场对应内容替换）",
+    "images": [
+      "/map/popup/hebeisaihanba(1).png",
+      "/map/popup/hebeisaihanba(2).png"
+    ],
+    "aircraftModel": "新舟60飞机",
+    "flightTime": "2024年8月",
+    "payloadType": "航空遥感系统搭载的三频段（L/S/C）多角度成像微波辐射计、三频段（Ku/K/Ka）全极化扫描微波辐射计、机载激光扫描仪系统以及全谱段高光谱成像仪4种航空载荷",
+    "missionType": "植被与土壤的水分遥感试验",
+    "description": "",
+    "operationParams": "共飞了4个架次，影像分辨率是0.2m，点密度2个点/平方米",
+    "surfaceFeatures": "山地、河流、森林、农田、湖泊、草地、沙地"
+  },
+  {
+    "id": "heilongjiangshengshuangya",
+    "name": "黑龙江省双鸭山市友谊农场测区",
+    "lon": 131.804167,
+    "lat": 46.770278,
+    "title": "黑龙江省双鸭山市友谊农场测区",
+    "summary": "本次试验是在中国科学院“黑土粮仓”科技会战先导专项支持下实施的天空地一体化立体协同观测试验。航空遥感系统作为承上启下的重要环节，承担了区域高分辨率多源遥感数据获取、天空地真实性传递验证等关键任务。为确保任务的高效完成，航空遥感系统充分发挥多载荷协同观测的优势和能力，综合集成了国产新一代多光谱光学相机、高光谱相机、多维度合成孔径雷达等多型航空遥感载荷，完成了共计4个架次的多个飞行高度的多载荷综合协同观测，光学覆盖了可见、近红外、短波红外等频谱，几何分辨率优于0.3m、光谱分辨率优于5nm，微波覆盖了P、L、S、C、X、Ka等多个波段，几何分辨率0.3~1m，高光谱覆盖可见-近红外和短波-红外谱段，几何分辨率分别为0.75米和1.5米，光谱分辨率优于5nm。为黑土示范区全方位、多频谱、高精度、定量化监测以及试验的成功提供了有力保障。",
+    "images": [
+      "/map/popup/heilongjiangshuangya(1).png",
+      "/map/popup/heilongjiangshuangya(2).png",
+      "/map/popup/heilongjiangshuangya(3).png"
+    ],
+    "aircraftModel": "新舟60飞机",
+    "flightTime": "2023年4月26日至5月4日",
+    "payloadType": "国产新一代多光谱光学相机、高光谱相机、多维度合成孔径雷达等多型航空遥感载荷，微波覆盖了P、L、S、C、X、Ka等多个波段",
+    "missionType": "黑土地天空地一体化综合观测试验",
+    "description": "",
+    "operationParams": "4个架次。几何分辨率优于0.3m、光谱分辨率优于5nm。微波几何分辨率0.3~1m。900平方公里测区原始数据量约722GB",
+    "surfaceFeatures": "农田"
+  },
+    {
+    "id": "heilongjiangshengshuangyashan",
+    "name": "黑龙江省双鸭山一期",
+    "lon": 131.157304,
+    "lat": 46.643442,
+    "title": "黑龙江省双鸭山市一期",
+    "summary": "双鸭山一期试验圆满完成，重点聚焦标准农田监测。任务运用多维度SAR系统获取全极化数据，覆盖标准农田区域，旨在监测农田建设质量、作物生长状况及土地利用变化。数据将为双鸭山高标准农田建设评估、农业精细化管理及粮食安全保障提供科学支撑。",
+    "images": [
+      "/map/popup/shuangyashan(1).png",
+      "/map/popup/shuangyashan(2).png"
+    ],
+    "aircraftModel": "新舟60飞机",
+    "flightTime": "2023年4月",
+    "payloadType": "多维度SAR 谱段成像仪AMMHS ADS80",
+    "missionType": "黑土地",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L/P波段 0.3米/ADS80 高光谱可见-近红外和短波-红外谱段，几何分辨率分别为0.75米和1.5米   覆盖面积约1150平，原始数据量为4.48TB",
+    "surfaceFeatures": "标准农田"
+  },
+      {
+    "id": "heilongjiangshengshuangyashan2",
+    "name": "黑龙江省双鸭山二期",
+    "lon": 131.157304,
+    "lat": 46.643442,
+    "title": "黑龙江省双鸭山市二期",
+    "summary": "双鸭山二期试验顺利完成，持续深化标准农田监测。任务运用多维度SAR系统获取高分辨率全极化数据，重点分析标准农田建设成效、作物生长动态及土壤墒情变化。数据将为双鸭山农田管理精细化、农业可持续发展及高标准农田建设优化提供科学依据。",
+    "images": [
+      "/map/popup/shuangyashanerqi (1).png",
+      "/map/popup/shuangyashanerqi (2).png"
+    ],
+    "aircraftModel": "新舟60飞机",
+    "flightTime": "2023年7月",
+    "payloadType": "多维度SAR 谱段成像仪AMMHS ADS80",
+    "missionType": "黑土地",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L/P波段 0.3米/ADS80 高光谱可见-近红外和短波-红外谱段，几何分辨率分别为0.75米和1.5米   覆盖面积约1150平，原始数据量为2.58TB",
+    "surfaceFeatures": "标准农田"
   },
   {
     "id": "sichuanlushan",
     "name": "四川省芦山",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 102.928260,
+    "lat": 30.144070,
     "title": "四川省芦山",
     "summary": "灾区芦山、宝兴、邛崃等县市约5000平方公里，获取0.6米分辨率航空遥感数据约256G。截至4月21日，遥感飞机共飞行4架次，获取有效数据300多G，实现了对灾区的全面覆盖。",
     "images": [
       "/map/popup/sichaun(1).png",
       "/map/popup/sichuan(2).png"
-    ]
+    ],
+    "aircraftModel": "航空遥感飞机B-4101",
+    "flightTime": "2013年4月20日",
+    "payloadType": "光学传感器",
+    "missionType": "抗震救灾",
+    "description": "",
+    "operationParams": "4架次、0.6米分辨率",
+    "surfaceFeatures": "林地、河流、建成区"
   },
   {
     "id": "sichuanwenchuan",
     "name": "四川汶川",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 103.591667,
+    "lat": 31.477500,
     "title": "四川汶川",
     "summary": "重点对北川新老县城、唐家山堰塞湖、映秀镇等曾备受关注的典型区域进行了遥感分析，直观展示了房屋、道路等基础设施的建设和震区生态环境恢复的基本情况。",
     "images": [
@@ -66,91 +261,592 @@
       "/map/popup/sichuanwenchuan(2).png",
       "/map/popup/sichuanwenchuan(3).png",
       "/map/popup/sichuanwenchuan(4).png"
-    ]
+    ],
+    "aircraftModel": "奖状",
+    "flightTime": "2010年4月",
+    "payloadType": "光学传感器",
+    "missionType": "灾后重建航空遥感监测",
+    "description": "",
+    "operationParams": "空间分辨率0.5m",
+    "surfaceFeatures": "房屋、道路、林区"
+  },
+    {
+    "id": "qinghaishengyushu",
+    "name": "青海省玉树藏族自治州玉树县",
+    "lon": 97.008611,
+    "lat": 33.003333,
+    "title": "青海省玉树藏族自治州玉树县",
+    "summary": "14日14点从绵阳机场起飞奔赴青海省玉树地震灾区，于当日15点30分开始获取地震灾区第一批空间分辨率为40cm的高分辨率遥感图像，图像主要覆盖玉树县结古镇西部地区。 部遥感监测区域范围房屋倒塌率达到61.7%。对遥感监测区域从西至东分为4个子区A、B、C、D， 4个子区的房屋倒塌率分别为38.2%、81.9%、83.1%、17.6%，房屋倒塌比率与房屋建筑类型有关，框架结构楼房倒塌相对较少，平房倒塌严重。 ",
+    "images": [
+      "/map/popup/qinghaiyushu(1).png",
+      "/map/popup/qinghaiyushu(2).png",
+      "/map/popup/qinghaiyushu(3).png",
+      "/map/popup/qinghaiyushu(4).png"
+    ],
+    "aircraftModel": "奖状",
+    "flightTime": "2010年4月",
+    "payloadType": "光学传感器",
+    "missionType": "抗震救灾",
+    "description": "",
+    "operationParams": "空间分辨率40cm",
+    "surfaceFeatures": "房屋、道路"
+  },
+  {
+    "id": "huangheyuantou",
+    "name": "黄河源头-玛多",
+    "lon": 98.209167,
+    "lat": 34.912500,
+    "title": "黄河源头-玛多",
+    "summary": "对地观测中心承担的973计划“空间观测全球变化敏感因子的机理与方法”项目的青藏高原江河源星机地同步观测试验已于日前开展。该试验拟在黄河源头-玛多、冬克玛底-北麓河两个试验区开展为期十余天的星机地同步观测试验，对实验区土壤、植被、湖泊、积雪、冰川等相关参数进行地面测量。参与本次试验的飞机是中国科学院对地观测与数字地球科学中心航空遥感中心的奖状飞机，试验协调小组2009年8月25日到达并驻扎在格尔木完成飞行前期的准备与协调任务后，飞机于8月28日下午抵达格尔木机场，并于29日执行了本次试验第一个架次的飞行任务，获取数据质量较好",
+    "images": [
+      "/map/popup/huanghe(1).png",
+      "/map/popup/huanghe(2).png"
+    ],
+    "aircraftModel": "奖状",
+    "flightTime": "2009年8月28日",
+    "payloadType": "高光谱传感器",
+    "missionType": "青藏高原江河源星机地同步观测试验",
+    "description": "",
+    "operationParams": "",
+    "surfaceFeatures": "土壤、植被、湖泊、积雪、冰川"
+  },
+  {
+    "id": "huangheyuantou_dongkemadi",
+    "name": "冬克玛底-北麓河",
+    "lon": 95.913056,
+    "lat": 35.018889,
+    "title": "冬克玛底-北麓河",
+    "summary": "对地观测中心承担的973计划“空间观测全球变化敏感因子的机理与方法”项目的青藏高原江河源星机地同步观测试验已于日前开展。该试验拟在黄河源头-玛多、冬克玛底-北麓河两个试验区开展为期十余天的星机地同步观测试验。（待你确认冬克玛底-北麓河对应的弹窗字段）",
+    "images": [
+      "/map/popup/huanghe(1).png",
+      "/map/popup/huanghe(2).png"
+    ],
+    "aircraftModel": "奖状",
+    "flightTime": "2009年8月28日",
+    "payloadType": "高光谱传感器",
+    "missionType": "青藏高原江河源星机地同步观测试验",
+    "description": "",
+    "operationParams": "",
+    "surfaceFeatures": "土壤、植被、湖泊、积雪、冰川"
+  },
+  {
+    "id": "beijingchaoyang",
+    "name": "北京朝阳区",
+    "lon": 116.396700,
+    "lat": 40.000100,
+    "title": "北京朝阳区",
+    "summary": "在北京奥运会圆满闭幕一周年之际，对地观测中心的高性能遥感飞机顺利完成了对北京中关村地区、奥运核心区等北京北部城区的航空遥感监测任务。此次任务目的在于获取最新北京北部城区的高分辨率遥感影像，在连续八年奥运动态航空遥感环境监测的基础上，继续展开奥运后环境遥感对比监测，同时展示建国60年来北京的城市建设成就和环境改善成果。遥感飞机使用UCXp数字航空摄影系统获取了该地区0.4米分辨率真彩色、彩红外和黑白影像，数据量约 230GB。",
+    "images": [
+      "/map/popup/beijingchaoyang.png"
+    ],
+    "aircraftModel": "奖状",
+    "flightTime": "2009年8月",
+    "payloadType": "UCXp数字航空摄影系统",
+    "missionType": "北京北部城区航空遥感监测任务",
+    "description": "",
+    "operationParams": "0.4米分辨率真彩色、彩红外和黑白影像，数据量约 230GB",
+    "surfaceFeatures": "房屋、道路"
   },
   {
     "id": "jiangsuyancheng",
     "name": "江苏盐城",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 120.139998,
+    "lat": 33.377631,
     "title": "江苏盐城",
     "summary": "江苏盐城试验顺利完成，聚焦黄海湿地与海岸带生态系统监测。任务使用多维度SAR系统获取全极化数据，覆盖湿地、滩涂等关键区域，旨在监测生态变化、海岸线动态及生物多样性。数据将为盐城湿地保护、生态修复及可持续发展规划提供科学支撑，助力打造绿色生态示范区域。",
     "images": [
       "/map/popup/江苏盐城测区多维度CSAR全极化DOM产品缩略图.jpg"
-    ]
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2021年3月",
+    "payloadType": "多维度SAR载荷 三线阵相机",
+    "missionType": "融合示范",
+    "description": "",
+    "operationParams": "0.3米Ka波段,0.5米C波段,1.0米S/L/P波段,0.2米/三线阵",
+    "surfaceFeatures": "滩涂 水陆交接"
+  },
+    {
+    "id": "huanghehenanduan",
+    "name": "黄河河南段",
+    "lon": 113.633333,
+    "lat": 34.916667,
+    "title": "黄河河南段",
+    "summary": "河南黄河段应用校飞的目标是结合生态环境行业对高分辨率热红外数据的需求，开展大视场红外多光谱扫描仪载荷基于中小飞行平台的应用校飞，获取载荷应用校飞飞行数据及地面数据，开展区域水体污染源等敏感目标识别与提取研究，为环保督察与执法工作提供客观依据，为政府区域生态环境管理和科学决策的提供决策支持，同时也验证载荷在生态环境领域的应用能力，完成应用评价。",
+    "images": [
+      "/map/popup/huanghehenanduan(1).png",
+      "/map/popup/huanghehenanduan(2).png",
+      "/map/popup/huanghehenanduan(3).png"
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2020年10月",
+    "payloadType": "大视场红外",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "水体、道路、农田、建筑"
+  },
+    {
+    "id": "heilongjiangjiansanjiangqixingnongchangsanqi",
+    "name": "黑龙江建三江七星农场三期",
+    "lon": 132.663111,
+    "lat": 47.348611,
+    "title": "黑龙江建三江七星农场三期",
+    "summary": "黑龙江建三江七星农场三期试验圆满完成，持续强化黑土地SAR遥感监测。任务运用多维度SAR系统获取全极化数据，全面分析黑土地健康状况、作物生长全过程及土壤生态变化。数据将为黑土地保护长效机制建立、农业现代化发展及粮食安全保障提供科学支撑。",
+    "images": [
+      "/map/popup/heilongjiangsanqi.jpg",
+      "/map/popup/三期-DEM-TIF-整区.JPG",
+      "/map/popup/三期-DOM-TIF-整区.JPG"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2025年9-10月",
+    "payloadType": "多维度SAR、CityMapper-1 ADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米L波段 5个点/平方米 0.3米/ADS80",
+    "surfaceFeatures": "标准农田"
+  },
+      {
+    "id": "heilongjiangjiansanjiangqixingnongchangsanqi1",
+    "name": "黑龙江建三江七星农场一期",
+    "lon": 132.663111,
+    "lat": 47.348611,
+    "title": "黑龙江建三江七星农场一期",
+    "summary": "黑龙江建三江七星农场一期试验圆满完成，聚焦黑土地SAR遥感监测。任务运用多维度SAR系统获取全极化数据，覆盖农场黑土区域，旨在监测土壤健康、作物生长状况及黑土退化情况。数据将为黑土地保护、农业生产优化及粮食安全提供科学支撑。",
+    "images": [
+      "IMG_CSAR_L1_20250619_ID18_RGB11_offset95_L2B.jpg",
+      "/map/popup/一期-DOM-TIF-整区.JPG",
+      "/map/popup/一期-DEM-TIF-整区.JPG",
+      "/map/popup/heilongjiangnongchangyiqi.png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2025年6月",
+    "payloadType": "多维度SAR、TerrainMapper-2 ADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米L波段 4个点/平方米 0.3米/ADS80 0.75m(全谱段)900平",
+    "surfaceFeatures": "标准农田"
+  },
+      {
+    "id": "heilongjiangjiansanjiangqixingnongchangsanqi2",
+    "name": "黑龙江建三江七星农场二期",
+    "lon": 132.663111,
+    "lat": 47.348611,
+    "title": "黑龙江建三江七星农场二期",
+    "summary": "黑龙江建三江七星农场二期试验顺利完成，深化黑土地SAR遥感监测。任务运用多维度SAR系统获取高分辨率全极化数据，重点分析黑土质量变化、作物生长动态及土壤墒情状况。数据将为黑土地精准管理、农业可持续发展及粮食安全提供科学依据。",
+    "images": [
+      "/map/popup/IMG_CSAR_L1_20250721_ID29_RGB11_offset74_L2B.jpg",
+      "/map/popup/二期截图-DOM-TIF-整区.JPG",
+      "/map/popup/二期截图-DEM-TIF-整区.JPG",
+      "/map/popup/helongjiangnongchangerqi (1).png",
+      "/map/popup/helongjiangnongchangerqi (2).png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2025年7月",
+    "payloadType": "多维度SAR、CityMapper-1 ADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米L波段 4个点/平方米 0.3米/ADS80",
+    "surfaceFeatures": "标准农田"
+  },
+    {
+    "id": "yantailaizhouwan",
+    "name": "烟台莱州湾",
+    "lon": 633333,
+    "lat": 37.177222,
+    "title": "烟台莱州湾",
+    "summary": "根据试验需求，在试验区内获取分布式L波段干涉SAR、P波段重轨干涉SAR、X波段SAR和激光雷达数据。",
+    "images": [
+      "/map/popup/laizhouwan-ASL80-DSM-整区.JPG"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2025年10月",
+    "payloadType": "ALS80",
+    "missionType": "有人机飞行试验",
+    "description": "",
+    "operationParams": "6-9个点/平方米",
+    "surfaceFeatures": "海面、滩涂"
+  },
+    {
+    "id": "hainanbawanglingtiaodai1",
+    "name": "海南霸王岭",
+    "lon": 109.116667,
+    "lat": 19.116667,
+    "title": "海南霸王岭",
+    "summary": "利用多种遥感数据源，结合先进的协同处理技术，实现对森林地上生物量的精准估测。项目通过集成光学、雷达等不同类型的遥感数据，充分发挥各数据源的优势，提高生物量估测的精度和可靠性。",
+    "images": [
+      "/map/popup/2025bawanging-DSM截图.JPG"
+    ],
+    "aircraftModel": "奖状遥感飞机",
+    "flightTime": "2025年10月",
+    "payloadType": "CityMapper-2",
+    "missionType": "海南激光雷达数据获取",
+    "description": "",
+    "operationParams": "10-100个点/平方米",
+    "surfaceFeatures": "林区、山地"
+  },
+  {
+    "id": "hainanbawanglingtiaodai",
+    "name": "海南霸王岭条带",
+    "lon": 109.116667,
+    "lat": 19.116667,
+    "title": "海南霸王岭条带",
+    "summary": "利用多种遥感数据源，结合先进的协同处理技术，实现对森林地上生物量的精准估测。项目通过集成光学、雷达等不同类型的遥感数据，充分发挥各数据源的优势，提高生物量估测的精度和可靠性。",
+    "images": [
+    ],
+    "aircraftModel": "奖状遥感飞机",
+    "flightTime": "2025年12月",
+    "payloadType": "CityMapper-2",
+    "missionType": "海南激光雷达数据获取",
+    "description": "",
+    "operationParams": "8-100个点/平方米",
+    "surfaceFeatures": "林区、山地"
+  },
+  {
+    "id": "hainanjianfengling",
+    "name": "海南尖峰岭条带",
+    "lon": 108.858611,
+    "lat": 18.736944,
+    "title": "海南尖峰岭条带",
+    "summary": "利用多种遥感数据源，结合先进的协同处理技术，实现对森林地上生物量的精准估测。项目通过集成光学、雷达等不同类型的遥感数据，充分发挥各数据源的优势，提高生物量估测的精度和可靠性。",
+    "images": [
+      "/map/popup/2025jianfenglingtiaodai_DSM.JPG"
+    ],
+    "aircraftModel": "奖状遥感飞机",
+    "flightTime": "2025年12月、2026年1月",
+    "payloadType": "CityMapper-2",
+    "missionType": "海南激光雷达数据获取",
+    "description": "",
+    "operationParams": "8-100个点/平方米",
+    "surfaceFeatures": "林区、山地"
+  },
+    {
+    "id": "hainanjianfengling1",
+    "name": "海南尖峰岭",
+    "lon": 108.858611,
+    "lat": 18.736944,
+    "title": "海南尖峰岭",
+    "summary": "利用多种遥感数据源，结合先进的协同处理技术，实现对森林地上生物量的精准估测。项目通过集成光学、雷达等不同类型的遥感数据，充分发挥各数据源的优势，提高生物量估测的精度和可靠性。",
+    "images": [
+      "/map/popup/2025jianfengling-DSM-整区.JPG"
+    ],
+    "aircraftModel": "奖状遥感飞机",
+    "flightTime": "2025年7-8月",
+    "payloadType": "CityMapper-2",
+    "missionType": "海南激光雷达数据获取",
+    "description": "",
+    "operationParams": "20-30个点/平方米",
+    "surfaceFeatures": "林区、山地"
   },
   {
     "id": "xinjiangxikunlunbingchuan",
     "name": "新疆西昆仑冰川",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 81.166667,
+    "lat": 35.250000,
     "title": "新疆西昆仑冰川",
     "summary": "本次试验以西昆仑高海拔冰川为探测对象，采用CityMapper‑2 完成冰川地表测绘与冰下结构透视探测，为西昆仑冰川资源监测、气候变化研究、水资源与灾害评估提供了先进可靠的航空探测技术与数据支撑。",
     "images": [
       "/map/popup/2026西昆仑成果图.JPG"
-    ]
+    ],
+    "aircraftModel": "奖状遥感飞机",
+    "flightTime": "2026年1-2月",
+    "payloadType": "CityMapper-2",
+    "missionType": "航空冰雷达透视探测项目",
+    "description": "",
+    "operationParams": "2-6个点/平方米",
+    "surfaceFeatures": "冰川"
+  },
+  {
+    "id": "puruogangribingchuan",
+    "name": "普若岗日冰川",
+    "lon": 89.250000,
+    "lat": 33.833333,
+    "title": "普若岗日冰川",
+    "summary": "本次试验以普若岗日冰川高海拔冰川为探测对象，采用CityMapper‑2 完成冰川地表测绘与冰下结构透视探测，为普若岗日冰川资源监测、气候变化研究、水资源与灾害评估提供了先进可靠的航空探测技术与数据支撑。",
+    "images": [
+    ],
+    "aircraftModel": "奖状遥感飞机",
+    "flightTime": "2025年3月 2024年7月",
+    "payloadType": "CityMapper-2ADS80",
+    "missionType": "航空冰雷达透视探测项目",
+    "description": "",
+    "operationParams": "2-4个点/平方米  0.4米/ADS80",
+    "surfaceFeatures": "冰川"
   },
   {
     "id": "shanxijiexiu",
     "name": "山西介休",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 111.918231,
+    "lat": 37.027201,
     "title": "山西介休",
     "summary": "结合物探部门大比例尺测绘应用的需求，开展相机汾河段的应用校飞完成物探部门大比例尺测绘应用区域飞行及地面数据获取，验证载荷的应用能力，完成应用评价。",
     "images": [
-    ]
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2020年9月",
+    "payloadType": "大面阵",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.05m",
+    "surfaceFeatures": "道路，房屋，城区"
   },
   {
     "id": "shanxifenhe",
     "name": "山西汾河",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 112.533333,
+    "lat": 37.866667,
     "title": "山西汾河",
     "summary": "为支撑汾河流域生态监测、河道测绘、水环境监管等业务应用，获取高精度、无畸变、地理定位一致的光学遥感影像，开展本次光学影像校正飞行试验。",
     "images": [
-    ]
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2020年9月",
+    "payloadType": "大面阵",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1m",
+    "surfaceFeatures": "道路，房屋，城区，河流"
+  },
+  {
+    "id": "sichuanjinshajiang",
+    "name": "四川金沙江",
+    "lon": 101.716667,
+    "lat": 26.583333,
+    "title": "四川金沙江",
+    "summary": "",
+    "images": [
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2023年4月",
+    "payloadType": "大面阵",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.08m",
+    "surfaceFeatures": "山地，河流"
+  },
+  {
+    "id": "heilongjiangwangkui",
+    "name": "黑龙江望奎",
+    "lon": 126.481500,
+    "lat": 46.831200,
+    "title": "黑龙江望奎",
+    "summary": "",
+    "images": [
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2021年6月",
+    "payloadType": "大面阵",
+    "missionType": "应用示范",
+    "description": "",
+    "operationParams": "0.14m",
+    "surfaceFeatures": "农田"
+  },
+  {
+    "id": "hunanchenzhou",
+    "name": "湖南郴州",
+    "lon": 113.014710,
+    "lat": 25.770494,
+    "title": "湖南郴州",
+    "summary": "",
+    "images": [
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2022年1月",
+    "payloadType": "大面阵",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.16m",
+    "surfaceFeatures": "山地，房屋，道路，建筑"
+  },
+  {
+    "id": "hunandongtinhu",
+    "name": "湖南洞庭湖",
+    "lon": 113.083333,
+    "lat": 29.383333,
+    "title": "湖南洞庭湖",
+    "summary": "",
+    "images": [
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2021年12月",
+    "payloadType": "大面阵",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.08",
+    "surfaceFeatures": "水域"
   },
   {
     "id": "yunnantengchong",
     "name": "云南腾冲",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 98.490615,
+    "lat": 25.025000,
     "title": "云南腾冲",
     "summary": "云南腾冲应用校飞的目标是面向地热水资源详查与评价工作需求，开展大视场红外多光谱扫描仪载荷基于中小飞行平台的应用校飞，获取载荷应用校飞飞行数据及地面数据，开展大视场红外扫描仪数据质量评价研究，利用地表温度以及设立的靶标等同步地面采集数据对绝对辐射定标精度进行评价，验证载荷在地热水资源调查领域的应用能力，完成应用评价。",
     "images": [
       "/map/popup/yunnanhengchong1.png",
       "/map/popup/yunnanhengchong2.png"
-    ]
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2021年3月",
+    "payloadType": "大视场红外",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "森林、道路、建筑、热泉"
+  },
+    {
+    "id": "neimengguwulanchabu",
+    "name": "内蒙古乌兰察布",
+    "lon": 113.132585,
+    "lat": 41.034133,
+    "title": "内蒙古乌兰察布",
+    "summary": "内蒙古乌兰察布试验圆满完成，聚焦草原生态与荒漠化监测。任务运用多维度SAR系统获取全极化数据，覆盖草原、荒漠等关键区域，旨在监测生态变化、荒漠化趋势及植被恢复状况。数据将为乌兰察布生态保护、草原管理及可持续发展规划提供科学支撑，助力筑牢北方生态安全屏障。",
+    "images": [
+      "/map/popup/内蒙古正蓝旗测区航遥LSAR单极化L2A快拼图.jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2021年7月",
+    "payloadType": "航空遥感SAR载荷、激光雷达、ADS80",
+    "missionType": "融合示范",
+    "description": "",
+    "operationParams": "0.5米C波段 2.0米P波段 3.0米L波段 0.2个点/平方米（激光雷达） 0.35米/ADS80",
+    "surfaceFeatures": "荒漠 农田"
   },
   {
     "id": "neimenggugenhe",
     "name": "内蒙古根河",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 121.521500,
+    "lat": 50.778800,
     "title": "内蒙古根河",
     "summary": "根据行业和科研用户需求，遴选根河测区作为应用校飞试验区，可基本满足林业、减灾用户在内蒙古区域的应用数据需求。飞行区地物类型以森林为主，地形包含平坦和非平坦区域，试验区其他地物类型可包括水体、道路、城镇、农田等。林业用户结合森林资源信息提取开展大视场三线阵立体航测相机、大视场面阵数字航空摄影相机、全谱段多模态成像光谱仪、多维度合成孔径雷达等载荷的应用与评价。减灾用户结合森林/草原火灾及隐患监测开展大视场面阵数字航空摄影相机、大视场红外多光谱扫描仪等载荷的应用和评价。",
     "images": [
       "/map/popup/neimengguxinhe.png"
-    ]
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2021年9月",
+    "payloadType": "大视场红外",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "森林、道路、建筑"
+  },
+  {
+    "id": "neimenggugenhe_1",
+    "name": "内蒙古根河1",
+    "lon": 121.521500,
+    "lat": 50.778800,
+    "title": "内蒙古根河1",
+    "summary": "内蒙古根河试验圆满完成，聚焦寒区森林与冻土生态监测。任务运用多维度SAR系统获取全极化数据，覆盖森林、湿地、冻土等关键区域，旨在监测森林健康、冻土动态及生态系统变化。数据将为根河生态保护、森林管理及寒区科学研究提供科学支撑，助力北方生态安全与可持续发展。",
+    "images": [
+      "/map/popup/genhe1.png",
+      "/map/popup/内蒙古根河测区多维度CSAR单极化L2B快拼图(北向南).jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2021年9月",
+    "payloadType": "多维度SAR载荷、大面阵航空相机",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米S/L/P波段 0.2米（大面阵）",
+    "surfaceFeatures": "林地"
+  },
+  {
+    "id": "jiangsumuyang",
+    "name": "江苏沭阳",
+    "lon": 119.125600,
+    "lat": 34.113900,
+    "title": "江苏沭阳",
+    "summary": "江苏沭阳试验顺利完成，聚焦农田生态与城乡发展监测。任务运用多维度SAR系统获取全极化数据，覆盖农田、城镇等关键区域，旨在监测农业生长状况、土地利用变化及城乡发展动态。数据将为沭阳农业管理、城市规划及生态保护提供科学支撑，助力区域高质量可持续发展。",
+    "images": [
+      "/map/popup/jiangsumuyang.png",
+      "/map/popup/jiangsumuyang.jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2022年7月-8月",
+    "payloadType": "多维度SAR载荷、大面阵、三线阵相机",
+    "missionType": "应用示范",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C波段 1.0米S/P波段 0.16m（大面阵）0.3米（三线阵）",
+    "surfaceFeatures": "标准农田"
   },
   {
     "id": "shandongrizhao",
     "name": "山东日照",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 119.526888,
+    "lat": 35.416377,
     "title": "山东日照",
     "summary": "山东日照测区位于山东日照地区及周边，测区内包含了日照市以及其它部分区域，涵盖了高标准农田、普通农田、城镇、农村、道路、裸地、山地等多种地物类型，覆盖了农业用户的农业高标准农田监测、耕地土壤水分/肥力质量监测与评价、农村人居环境调查与评价以及减灾用户的房屋本底数据制备、以及房屋建筑结构识别等应用数据需求区域。",
     "images": [
       "/map/popup/shandongrizhao1.png",
       "/map/popup/shandongrizhao2.png",
       "/map/popup/shandongrizhao3.png"
-    ]
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2023年2月",
+    "payloadType": "大视场红外",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "道路、建筑、农田"
+  },
+  {
+  "id": "shandongrizhao_1",
+  "name": "山东日照一期",
+  "lon": 119.526888,
+  "lat": 35.416377,
+  "title": "山东日照一期",
+  "summary": "山东日照一期试验圆满完成，聚焦海岸带与海洋环境监测。任务运用多维度SAR系统获取全极化数据，覆盖海岸、港口、海域等关键区域，旨在监测海岸线动态、海洋环境变化及港口设施状况。数据将为日照海洋资源管理、港口发展及生态保护提供科学支撑，助力海洋经济高质量发展。",
+  "images": [
+    "/map/popup/山东日照测区多维度CSAR单极化L2B快拼图(第一次飞行).jpg",
+    "/map/popup/2022年日照整体.PNG"
+  ],
+  "aircraftModel": "新舟60",
+  "flightTime": "2022年8-9月",
+  "payloadType": "多维度SAR载荷、大面阵",
+  "missionType": "应用校飞",
+  "description": "",
+  "operationParams": "0.3米Ka波段 0.5米C波段 1.0米S/P波段 0.13m（大面阵）",
+  "surfaceFeatures": "城市 农田 海岸 港口"
+},
+{
+  "id": "shandongrizhao_2",
+  "name": "山东日照二期",
+  "lon": 119.526888,
+  "lat": 35.416377,
+  "title": "山东日照二期",
+  "summary": "山东日照二期试验圆满完成，聚焦海岸带生态与海洋环境深度监测。任务运用多维度SAR系统获取全极化数据，覆盖海岸、港口、近岸海域等关键区域，旨在分析海岸线动态变化、海洋生态健康状况及港口设施运行状态。数据将为日照海洋资源精细化管理、生态保护及海洋经济可持续发展提供科学支撑。",
+  "images": [
+    "/map/popup/山东日照测区多维度CSAR单极化L2B快拼图(第二次飞行).jpg",
+    "/map/popup/2023日照整区截图.JPG"
+  ],
+  "aircraftModel": "新舟60",
+  "flightTime": "2023年1-2月",
+  "payloadType": "多维度SAR载荷、大面阵",
+  "missionType": "应用校飞",
+  "description": "",
+  "operationParams": "0.3米Ka波段 0.5米C波段 1.0米S/P波段 0.13m（大面阵）",
+  "surfaceFeatures": "城市 农田 海岸 港口"
+},
+  {
+    "id": "qinghaibayibingchuan",
+    "name": "青海八一冰川",
+    "lon": 99.117500,
+    "lat": 39.112200,
+    "title": "青海八一冰川",
+    "summary": "",
+    "images": [
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2023年3月",
+    "payloadType": "ADS80",
+    "missionType": "青海冰川透视与层析遥感试验",
+    "description": "",
+    "operationParams": "0.3m",
+    "surfaceFeatures": "冰川"
   },
   {
     "id": "hebeitangshan",
     "name": "河北唐山",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 118.175393,
+    "lat": 39.635113,
     "title": "河北唐山",
     "summary": "分析不同建设用地温度反演差异，判断工矿企业生产状况，并掌握钢铁企业去产能水平，获取精细城市建设用地监测结果，充分评价新型航空热红外载荷数据质量及在城市建设用地精细监测方面的应用潜力，构建与高分航空数据相适应的城市建设用地精细监测技术流程，促进数据应用。",
     "images": [
@@ -160,45 +856,192 @@
       "/map/popup/tangshan4.png",
       "/map/popup/tangshan5.png",
       "/map/popup/tangshan6.png"
-    ]
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2023年6月",
+    "payloadType": "大视场红外",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "建筑、工厂、农田、道路"
   },
   {
     "id": "hunan",
     "name": "湖南汨罗",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 113.066700,
+    "lat": 28.800000,
     "title": "湖南汨罗",
     "summary": "开展大视场红外多光谱扫描仪载荷基于PC6小平台的应用校飞，获取载荷应用校飞飞行数据及地面数据，开展大视场红外扫描仪数据质量评价研究，服务于环保和交通行业的监测应用。",
     "images": [
       "/map/popup/hunan1.png",
       "/map/popup/hunan2.png",
       "/map/popup/hunan3.png"
-    ]
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2023年8月",
+    "payloadType": "大视场红外",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "水体、农田、道路、轮船"
+  },
+    {
+    "id": "hunan_1",
+    "name": "湖南汨罗_1",
+    "lon": 113.066700,
+    "lat": 28.800000,
+    "title": "湖南汨罗_1",
+    "summary": "",
+    "images": [
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2021年12月",
+    "payloadType": "大面阵",
+    "missionType": "应用校飞",
+    "description": "",
+    "operationParams": "0.08",
+    "surfaceFeatures": "道路、水域、建筑"
   },
   {
     "id": "neimenggu",
     "name": "内蒙古多伦",
-    "lon": 118.505,
-    "lat": 37.438,
+    "lon": 116.485123,
+    "lat": 42.203011,
     "title": "内蒙古多伦",
     "summary": "内蒙古自治区多伦县等典型地区为示范区，综合利用大视场红外多光谱扫描仪等载荷，针对基础地质、土地沙质荒漠化、土地利用开发、矿山开发环境等要素，开展自然资源综合调查应用示范。包括航空遥感数据获取与处理、技术方法研究、自然资源综合调查示范应用、专题成果图集制作与技术规范。",
     "images": [
       "/map/popup/neimenggu1.png",
       "/map/popup/neimenggu2.png",
       "/map/popup/neimenggu3.png"
-    ]
+    ],
+    "aircraftModel": "小平台",
+    "flightTime": "2023年9月",
+    "payloadType": "大视场红外",
+    "missionType": "应用示范",
+    "description": "",
+    "operationParams": "0.1/0.2/0.4m",
+    "surfaceFeatures": "建筑、道路、农田"
+  },
+    {
+    "id": "neimenggu_1",
+    "name": "内蒙古多伦_1",
+    "lon": 116.485123,
+    "lat": 42.203011,
+    "title": "内蒙古多伦_1",
+    "summary": "内蒙古多伦试验圆满完成，聚焦草原生态与荒漠化监测。任务运用多维度SAR系统获取全极化数据，覆盖草原、荒漠等关键区域，旨在监测草原健康状况、荒漠化趋势及生态系统动态变化。数据将为多伦草原保护、生态修复及可持续发展规划提供科学支撑。",
+    "images": [
+      "/map/popup/neimengguduolun1.png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2023年6月",
+    "payloadType": "多维度SAR载荷 三线阵相机",
+    "missionType": "应用示范",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L/P波段 0.3米(RGB)、0.15米(PAN)/三线阵相机",
+    "surfaceFeatures": "荒漠、农田"
+  },
+    {
+    "id": "wenchang",
+    "name": "海南文昌",
+    "lon": 110.751667,
+    "lat": 19.612500,
+    "title": "海南文昌",
+    "summary": "海南文昌试验圆满完成，聚焦航天发射场周边环境与海岸带监测。任务运用多维度SAR系统获取全极化数据，覆盖发射场周边、海岸带等关键区域，旨在监测环境变化、海岸线动态及生态系统状况。数据将为文昌航天基地建设、生态保护及区域发展提供科学支撑。",
+    "images": [
+      "/map/popup/wenchang.jpg",
+      "/map/popup/wenchang.png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2024年4月（SAR） 2023年5月（CM2）",
+    "payloadType": "多维度SAR、CityMapper-2 ADS80",
+    "missionType": "融合示范",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米S/L波段 6个点/平方米 0.3米/ADS80",
+    "surfaceFeatures": "滩涂 农田"
+  },
+    {
+    "id": "haikou",
+    "name": "海南海口",
+    "lon": 110.330802,
+    "lat": 20.022071,
+    "title": "海南海口",
+    "summary": "海南海口试验顺利完成，聚焦城市发展与海岸带生态监测。任务运用多维度SAR系统获取全极化数据，覆盖城区、海岸等关键区域，旨在监测城市扩张、海岸线变化及生态系统健康状况。数据将为海口城市规划、生态保护及可持续发展提供科学依据。",
+    "images": [
+      "/map/popup/haikou.jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2024年5月",
+    "payloadType": "多维度SAR ADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米S/L波段 0.5米/ADS80",
+    "surfaceFeatures": "滩涂 农田"
+  },
+    {
+    "id": "wanning",
+    "name": "吉林公主岭",
+    "lon": 124.821035,
+    "lat": 43.504938,
+    "title": "吉林公主岭",
+    "summary": "吉林公主岭试验圆满完成，重点关注标准农田SAR遥感监测。任务运用多维度SAR系统获取全极化数据，覆盖标准农田区域，旨在监测农田建设质量、作物生长状况及土壤墒情变化。数据将为公主岭高标准农田管理、农业生产优化及粮食安全提供科学支撑。",
+    "images": [
+      "/map/popup/公主岭DOM.JPG",
+      "/map/popup/jilingongzhuling.jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2024年6月",
+    "payloadType": "多维度SAR CityMapper-2 ADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米S/L波段 3.5个点/平方米 0.3米/ADS80",
+    "surfaceFeatures": "标准农田"
   },
   {
     "id": "dongying",
-    "name": "东营数据",
-    "lon": 118.505,
-    "lat": 37.438,
-    "title": "东营数据",
-    "summary": "山东东营一期试验圆满完成，聚焦黄河三角洲生态与海岸带监测。任务运用多维度SAR系统获取全极化数据，采用AMMHS全谱段成像仪获取可见-近红外，短波-红外数据，覆盖三角洲、海岸等关键区域，旨在监测生态变化、海岸线动态及湿地状况。数据将为东营生态保护、湿地管理及区域发展提供科学支撑。山东东营二期试验顺利完成，深化黄河三角洲生态监测。任务运用多维度SAR系统获取高分辨率全极化数据，采用AMMHS全谱段成像仪获取可见-近红外，短波-红外数据重点分析生态系统变化、海岸线动态及湿地恢复状况。数据将为东营生态保护精细化管理、湿地修复及可持续发展提供科学依据。",
+    "name": "山东东营一期",
+    "lon": 118.664710,
+    "lat": 37.434091,
+    "title": "山东东营一期",
+    "summary": "山东东营一期试验圆满完成，聚焦黄河三角洲生态与海岸带监测。任务运用多维度SAR系统获取全极化数据，采用AMMHS全谱段成像仪获取可见-近红外，短波-红外数据，覆盖三角洲、海岸等关键区域，旨在监测生态变化、海岸线动态及湿地状况。数据将为东营生态保护、湿地管理及区域发展提供科学支撑。山东东营二期试验顺利完成，深化黄河三角洲生态监测。任务运用多维度SAR系统获取高分辨率全极化数据，采用AMMHS全谱段成像仪获取可见-近红外，短波-红外数据重点分析生态系统变化、海岸线动态及湿地恢复状况。数据将为东营生态保护精细化管理、湿地修复及可持续发展提供科学支撑。",
     "images": [
-      "/map/popup/dongying1.jpg",
-      "/map/popup/dongying2.jpg"
-    ]
+      "/map/popup/dongyin1.jpg",
+      "/map/popup/2024_东营_北区_DOM_整区.JPG",
+      "/map/popup/2024_东营_北区_DSM_整区.jpg",
+      "/map/popup/2024-东营-南区-DSM-整区.JPG",
+      "/map/popup/2024-东营-南区-DOM-整区.JPG",
+      "/map/popup/dongyingyiqi.png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2024年8月",
+    "payloadType": "多维度SAR、CityMapper-2",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L波段 0.2m（大面阵）0.75m(全谱段)1500平",
+    "surfaceFeatures": "滩涂 湿地"
+  },
+    {
+    "id": "dongying2",
+    "name": "山东东营二期",
+    "lon": 118.664710,
+    "lat": 37.434091,
+    "title": "山东东营二期",
+    "summary": "山东东营二期试验顺利完成，深化黄河三角洲生态监测。任务运用多维度SAR系统获取高分辨率全极化数据，采用AMMHS全谱段成像仪获取可见-近红外，短波-红外数据重点分析生态系统变化、海岸线动态及湿地恢复状况。数据将为东营生态保护精细化管理、湿地修复及可持续发展提供科学依据。",
+    "images": [
+      "/map/popup/IMG_CSAR_SL6_20250809_ID41_RGB11_offset0_L2B (2).jpg",
+      "/map/popup/2025-dongying-beiqu-DEM-整区.JPG",
+      "/map/popup/2025-dongying-beiqu-DOM-整区.JPG",
+      "/map/popup/2025-dongying-nanqu-DSM-整区.JPG",
+      "/map/popup/2025-dongying-nanqu-DOM-整区.JPG",
+      "/map/popup/dongyingerqi1.png",
+      "/map/popup/dongyingerqi2.png"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2025年7-8月",
+    "payloadType": "多维度SAR、CityMapper-2 ADS80",
+    "missionType": "",
+    "description": "",
+    "operationParams": "0.5米C/X波段 1.0米L波段 3个点/平方米 0.3米/ADS80 0.75m(全谱段)1500平",
+    "surfaceFeatures": "滩涂 湿地"
   },
   {
     "id": "wanning",
@@ -207,6 +1050,15 @@
     "lat": 18.799,
     "title": "海南万宁",
     "summary": "海南万宁试验圆满完成，旨在获取该区域高分辨率遥感数据，监测海洋环境与海岸带变化。试验运用多维度SAR系统，获取全极化数据，覆盖海岸、海域等关键区域。数据将为万宁海洋资源管理、生态保护及区域发展规划提供科学支撑，助力海洋强省建设",
-    "images": []
+    "images": [
+      "/map/popup/海南万宁测区多维度CSAR全极化L2A级快拼图.jpg"
+    ],
+    "aircraftModel": "新舟60",
+    "flightTime": "2020年12月 2021年3-4月",
+    "payloadType": "多维度SAR载荷 三线阵相机",
+    "missionType": "融合示范",
+    "description": "",
+    "operationParams": "0.3米Ka波段 0.5米C/X波段 1.0米S/L/P波段 0.2米/三线阵",
+    "surfaceFeatures": "舰船 丘陵 城市"
   }
 ]

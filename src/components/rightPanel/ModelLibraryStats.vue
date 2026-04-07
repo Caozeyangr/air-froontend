@@ -59,159 +59,99 @@ const inversionTags = ['土壤含水率', '水质参数']
 
 
 
-// 获取3D饼图数据 - 生成顶面、底面和侧面（带厚度）
-function getPie3D(pieData) {
+// 扇形曲面参数方程（经典 3D 饼图近似实现）
+function getParametricEquation(startRatio, endRatio, isSelected, isHovered, k, h) {
+  const midRatio = (startRatio + endRatio) / 2
+  const startRadian = startRatio * Math.PI * 2
+  const endRadian = endRatio * Math.PI * 2
+  const midRadian = midRatio * Math.PI * 2
+  isSelected = false
+  const kk = typeof k !== 'undefined' ? k : 1 / 3
+  const offsetX = isSelected ? Math.sin(midRadian) * 0.1 : 0
+  const offsetY = isSelected ? Math.cos(midRadian) * 0.1 : 0
+  const hoverRate = isHovered ? 1.05 : 1
+  return {
+    u: { min: -Math.PI, max: Math.PI * 3, step: Math.PI / 32 },
+    v: { min: 0, max: Math.PI * 2, step: Math.PI / 20 },
+    x: function (u, v) {
+      if (u < startRadian) {
+        return offsetX + Math.cos(startRadian) * (1 + Math.cos(v) * kk) * hoverRate
+      }
+      if (u > endRadian) {
+        return offsetX + Math.cos(endRadian) * (1 + Math.cos(v) * kk) * hoverRate
+      }
+      return offsetX + Math.cos(u) * (1 + Math.cos(v) * kk) * hoverRate
+    },
+    y: function (u, v) {
+      if (u < startRadian) {
+        return offsetY + Math.sin(startRadian) * (1 + Math.cos(v) * kk) * hoverRate
+      }
+      if (u > endRadian) {
+        return offsetY + Math.sin(endRadian) * (1 + Math.cos(v) * kk) * hoverRate
+      }
+      return offsetY + Math.sin(u) * (1 + Math.cos(v) * kk) * hoverRate
+    },
+    z: function (u, v) {
+      if (u < -Math.PI * 0.5) {
+        return Math.sin(u) * h * 0.1
+      }
+      if (u > Math.PI * 2.5) {
+        return Math.sin(u) * h * 0.1
+      }
+      // 让上下表面高度都随 h 缩放，避免出现“过高的立起来的厚度”
+      return Math.sin(v) > 0 ? 1 * h * 0.1 : -1 * h * 0.1
+    }
+  }
+}
+
+// 3D 饼图：parametric surface 扇区（internalDiameterRatio 控制镂空，如 0.6）
+function getPie3D(pieData, internalDiameterRatio) {
   const series = []
   let sumValue = 0
   let startValue = 0
   let endValue = 0
+  const maxValue = Math.max(...pieData.map(d => d.value))
+  const k =
+    typeof internalDiameterRatio !== 'undefined'
+      ? (1 - internalDiameterRatio) / (1 + internalDiameterRatio)
+      : 1 / 3
 
   for (let i = 0; i < pieData.length; i++) {
     sumValue += pieData[i].value
+    const seriesItem = {
+      name: typeof pieData[i].name === 'undefined' ? `series${i}` : pieData[i].name,
+      type: 'surface',
+      parametric: true,
+      wireframe: { show: false },
+      pieData: pieData[i],
+      pieStatus: { selected: false, hovered: false, k: 1 / 10 }
+    }
+    if (pieData[i].itemStyle) {
+      const itemStyle = {}
+      if (pieData[i].itemStyle.color != null) itemStyle.color = pieData[i].itemStyle.color
+      if (pieData[i].itemStyle.opacity != null) itemStyle.opacity = pieData[i].itemStyle.opacity
+      seriesItem.itemStyle = itemStyle
+    }
+    series.push(seriesItem)
   }
 
-  // 甜甜圈 3D 饼图：中间镂空，两边实心；高度随数值差异化
-  const innerRadius = 0.48 // 内孔半径加大一点，让中间空心更明显
-  // “扁平”效果：整体厚度更薄
-  const minHeight = 0.12
-  const maxHeight = 0.22
-  const maxValue = Math.max(...pieData.map(d => d.value))
+  for (let i = 0; i < series.length; i++) {
+    endValue = startValue + series[i].pieData.value
+    series[i].pieData.startRatio = startValue / sumValue
+    series[i].pieData.endRatio = endValue / sumValue
 
-  for (let i = 0; i < pieData.length; i++) {
-    const item = pieData[i]
-    endValue = startValue + item.value
-    const startRatio = startValue / sumValue
-    const endRatio = endValue / sumValue
-    const startRadian = startRatio * Math.PI * 2
-    const endRadian = endRatio * Math.PI * 2
-    const midRadian = (startRadian + endRadian) / 2
-    const offsetX = 0 // 无间隔：不爆炸
-    const offsetY = 0
-
-    const thickness = minHeight + ((item.value / maxValue) * (maxHeight - minHeight))
-
-    // 颜色：顶面更亮，侧面更暗，营造“高光+渐变”科技感
-    const topColor = item.itemStyle?.topColor || item.itemStyle?.color
-    const sideColor = item.itemStyle?.sideColor || item.itemStyle?.color
-
-    // 1. 顶面（上表面）
-    series.push({
-      name: item.name,
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: topColor,
-        opacity: 1,
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        // v 从 innerRadius 开始，中心会形成镂空
-        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
-        x: function (u, v) { return Math.cos(u) * v + offsetX },
-        y: function (u, v) { return Math.sin(u) * v + offsetY },
-        z: function (u, v) { return thickness }
-      }
-    })
-
-    // 2. 底面（下表面）
-    series.push({
-      name: item.name + '_bottom',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: sideColor,
-        opacity: 0.95
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
-        x: function (u, v) { return Math.cos(u) * v + offsetX },
-        y: function (u, v) { return Math.sin(u) * v + offsetY },
-        z: function (u, v) { return 0 }
-      }
-    })
-
-    // 3. 外侧面（弧形侧面）
-    series.push({
-      name: item.name + '_outer',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: sideColor,
-        opacity: 0.9
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(u) + offsetX },
-        y: function (u, v) { return Math.sin(u) + offsetY },
-        z: function (u, v) { return v }
-      }
-    })
-
-    // 4. 内侧面（内孔边界：保证“中间镂空，两边实心”）
-    series.push({
-      name: item.name + '_inner',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: sideColor,
-        opacity: 0.86
-      },
-      parametricEquation: {
-        u: { min: startRadian, max: endRadian, step: (endRadian - startRadian) / 40 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(u) * innerRadius + offsetX },
-        y: function (u, v) { return Math.sin(u) * innerRadius + offsetY },
-        z: function (u, v) { return v }
-      }
-    })
-
-    // 5. 起始侧面（径向平面：范围从内半径到外半径）
-    series.push({
-      name: item.name + '_start',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.95
-      },
-      parametricEquation: {
-        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(startRadian) * u + offsetX },
-        y: function (u, v) { return Math.sin(startRadian) * u + offsetY },
-        z: function (u, v) { return v }
-      }
-    })
-
-    // 6. 结束侧面（径向平面：范围从内半径到外半径）
-    series.push({
-      name: item.name + '_end',
-      type: 'surface',
-      parametric: true,
-      wireframe: { show: false },
-      itemStyle: {
-        color: item.itemStyle.color,
-        opacity: 0.95
-      },
-      parametricEquation: {
-        u: { min: innerRadius, max: 1, step: (1 - innerRadius) / 16 },
-        v: { min: 0, max: thickness, step: thickness / 8 },
-        x: function (u, v) { return Math.cos(endRadian) * u + offsetX },
-        y: function (u, v) { return Math.sin(endRadian) * u + offsetY },
-        z: function (u, v) { return v }
-      }
-    })
-
+    // 保持“总体很扁”的最高高度不变：最大值扇区为 1，其它按比例降低
+    const hScale = maxValue > 0 ? (series[i].pieData.value / maxValue) : 1
+    series[i].parametricEquation = getParametricEquation(
+      series[i].pieData.startRatio,
+      series[i].pieData.endRatio,
+      false,
+      false,
+      k,
+      hScale
+    )
     startValue = endValue
   }
-
   return series
 }
 
@@ -236,7 +176,7 @@ function initChart() {
     }, // 青绿（高光+薄荷）
   ]
 
-  const series = getPie3D(pieData)
+  const series = getPie3D(pieData, 0.6)
 
   // 外侧标注：分类名 + 数值分开展示；引导线统一浅灰；文字颜色跟随扇区
   pieData.forEach((item, index) => {
@@ -245,10 +185,10 @@ function initChart() {
     const midRadian = (startRadian + endRadian) / 2
 
     // 与饼图顶面高度一致：把引导线从“饼图上方”开始
-    const minHeight = 0.12
-    const maxHeight = 0.22
+    // 与饼图真实厚度一致（最高仍很扁），让三块呈现“有高有低”
     const maxValue = Math.max(...pieData.map(d => d.value))
-    const thickness = minHeight + ((item.value / maxValue) * (maxHeight - minHeight))
+    const hScale = maxValue > 0 ? (item.value / maxValue) : 1
+    const thickness = 0.1 * hScale
     const topZ = thickness + 0.03
     // A：折点必须落在 midRadian 的径向射线上（x=cos(mid)*r, y=sin(mid)*r）
     // 左边：水平->沿径向斜向下入饼图；右边：沿径向斜向上出饼图->水平
@@ -306,7 +246,8 @@ function initChart() {
       type: 'scatter3D',
       symbolSize: 0,
       itemStyle: { color: item.itemStyle.color },
-      data: [[xEnd + labelOffsetX, yEnd + labelOffsetY, 0.30]],
+      // 扁平化后饼面高度降低：标签点 z 同步下调，贴近饼面观感
+      data: [[xEnd + labelOffsetX, yEnd + labelOffsetY, 0.22]],
       label: {
         show: true,
         formatter: () => sign > 0
@@ -398,7 +339,7 @@ function initChart() {
     tooltip: {
       show: true,
       formatter: (params) => {
-        if (params.seriesName !== 'mouseoutSeries' && !params.seriesName.includes('_label')) {
+        if (params.seriesName !== 'mouseoutSeries' && !params.seriesName.includes('_label') && !params.seriesName.includes('_line')) {
           const dataItem = pieData.find(item => params.seriesName.startsWith(item.name))
           if (!dataItem) return ''
           return `${dataItem.name}<br/><span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:${dataItem.itemStyle.color};"></span>${dataItem.value}`
@@ -414,25 +355,22 @@ function initChart() {
       max: 1.35
     },
     zAxis3D: {
-      min: -0.5,
-      max: 0.5
+      min: -0.6,
+      max: 0.6
     },
     grid3D: {
       show: false,
       boxHeight: 52,
       viewControl: {
-        // 更平一些的俯视：角度从 45° 调整到 30°
-        alpha: 30,       // 0 是侧视，90 是正上方，这里取 30° 更接近平视
-        beta: 0,
-        distance: 172,   // 进一步拉近：只放大饼图本体
-        minAlpha: 30,
-        maxAlpha: 30,
-        minBeta: 0,
-        maxBeta: 0,
-        animation: false,
-        autoRotate: false,
+        // 自动旋转 + 可拖拽；勿限制 alpha/beta 范围，否则 autoRotate 很快会被夹住看起来像不转
+        alpha: 20,
+        beta: 15,
+        distance: 175,
+        autoRotate: true,
+        autoRotateSpeed: 14,
+        autoRotateDirection: 'cw',
         zoomSensitivity: 0,
-        rotateSensitivity: 0,
+        rotateSensitivity: 1,
         panSensitivity: 0,
       },
       light: {
