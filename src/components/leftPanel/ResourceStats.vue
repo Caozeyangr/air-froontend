@@ -20,7 +20,8 @@ const props = defineProps({
 function clampPct(n) {
   const v = Number(n)
   if (Number.isNaN(v)) return 0
-  return Math.min(100, Math.max(0, v))
+  const clamped = Math.min(100, Math.max(0, v))
+  return Number(clamped.toFixed(2))
 }
 
 const chartRef = ref(null)
@@ -106,7 +107,7 @@ function buildOption() {
         data: rows.map((_, i) => [100, i]),
         label: {
           show: true,
-          formatter: (p) => `{val|${rows[p.dataIndex].value}}{unit|%}`,
+          formatter: (p) => `{val|${rows[p.dataIndex].value.toFixed(2)}}{unit|%}`,
           position: 'top',
           offset: [0, -9],
           align: 'right',

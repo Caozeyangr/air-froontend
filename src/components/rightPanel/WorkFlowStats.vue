@@ -119,7 +119,7 @@ function initChart() {
       show: true,
       trigger: 'item',
       borderColor: 'rgba(255,255,255,.3)',
-      backgroundColor: 'rgba(13,5,30,.6)',
+      backgroundColor: 'rgba(255,255,255,1)',
       borderWidth: 1,
       formatter: (params) => {
         if (!params?.data?.name) return ''
