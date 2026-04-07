@@ -20,12 +20,21 @@ let postRenderListener = null
 let rafId = null
 let lastRenderAt = 0
 
-// 与 CesiumViewer.vue 保持一致：只显示这 5 个点位（其它新增点先“隐藏”）
-const ACTIVE_MARKER_IDS = new Set(['beijing', 'bayannur', 'yingkou-bayuquan', 'dongying', 'wanning'])
+function waitForCesiumViewer(timeoutMs = 10000, intervalMs = 150) {
+  return new Promise((resolve) => {
+    const start = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    const timer = () => {
+      const c = typeof window !== 'undefined' ? window.__airCesiumViewer : null
+      if (c?.scene) return resolve(c)
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      if (now - start > timeoutMs) return resolve(null)
+      setTimeout(timer, intervalMs)
+    }
+    timer()
+  })
+}
 
 function isActiveMarker(m) {
-  const id = m?.id || m?.name
-  if (!ACTIVE_MARKER_IDS.has(id)) return false
   const lon = Number(m?.lon)
   const lat = Number(m?.lat)
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) return false
@@ -166,6 +175,10 @@ async function init() {
 
   if (typeof window !== 'undefined') {
     cesiumViewer = window.__airCesiumViewer || null
+  }
+  // CesiumViewer 可能比本组件晚挂载；避免 cesiumViewer 为空导致辐射线永远不渲染
+  if (!cesiumViewer?.scene) {
+    cesiumViewer = await waitForCesiumViewer()
   }
 
   const markers = await loadMarkers()

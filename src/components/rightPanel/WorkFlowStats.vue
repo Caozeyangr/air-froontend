@@ -60,156 +60,143 @@ const workflowData = computed(() => {
   }))
 })
 
+function hexToRgb(hex) {
+  const h = String(hex || '').replace('#', '').trim()
+  if (h.length !== 6) return { r: 66, g: 172, b: 255 }
+  const n = parseInt(h, 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+
+function mixRgb(a, b, t) {
+  return {
+    r: Math.round(a.r + (b.r - a.r) * t),
+    g: Math.round(a.g + (b.g - a.g) * t),
+    b: Math.round(a.b + (b.b - a.b) * t)
+  }
+}
+
+function rgbToCss({ r, g, b }, alpha = 1) {
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
 function initChart() {
   if (!chartRef.value) return
   if (!chart) chart = echarts.init(chartRef.value)
 
   const data = workflowData.value
-  // 仅用于视觉占比/角度，不影响右侧列表显示值
-  const visualValues = data.map((d) => Math.max(1, Number(d.value || 0)))
-  const gradients = [
-    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-      { offset: 0, color: '#6FD3FF' },
-      { offset: 1, color: '#208BFF' }
-    ]),
-    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-      { offset: 0, color: '#B5FFF4' },
-      { offset: 1, color: '#1BC9B1' }
-    ]),
-    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-      { offset: 0, color: '#C6F6B0' },
-      { offset: 1, color: '#52C41A' }
-    ]),
-    new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-      { offset: 0, color: '#FFE9A6' },
-      { offset: 1, color: '#FFB52C' }
-    ])
-  ]
-  const makeSingleSliceSeries = (sliceIndex, outerRadius) => ({
-    name: `workflow-main-${sliceIndex}`,
-    type: 'pie',
-    radius: ['24%', outerRadius],
-    center: ['50%', '52%'],
-    clockwise: true,
-    startAngle: 220,
-    avoidLabelOverlap: false,
-    label: { show: false },
-    labelLine: { show: false },
-    itemStyle: {
-      shadowColor: 'rgba(0, 0, 0, 0.15)',
-      shadowBlur: 12,
-      shadowOffsetY: 4
-    },
-    data: data.map((item, i) => ({
-      name: item.name,
-      value: visualValues[i],
-      itemStyle: i === sliceIndex
-        ? { color: gradients[i] }
-        : { color: 'rgba(0,0,0,0)' }
-    }))
+  const total = data.reduce((prev, curr) => prev + Number(curr.value || 0), 0)
+
+  // 扇形渐变：跟右侧文字颜色一致（用该颜色做由亮到深的线性渐变）
+  const pieData = data.map((d) => {
+    const base = hexToRgb(d.color)
+    const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.55)
+    const darker = mixRgb(base, { r: 0, g: 0, b: 0 }, 0.12)
+    return {
+      name: d.name,
+      // 仅调整图形半径观感（roseType: area）：
+      // - 青色缩到原绿色半径
+      // - 绿色再缩小到中层蓝圈内，并与蓝圈留出间距
+      value:
+        d.color === '#36CFC9'
+          ? Number(d.value || 0) * 0.72
+          : d.color === '#52C41A'
+            ? Number(d.value || 0) * 0.30
+            : Number(d.value || 0),
+      rawValue: Number(d.value || 0),
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: rgbToCss(lighter, 1) },
+          { offset: 1, color: rgbToCss(darker, 1) }
+        ])
+      }
+    }
   })
 
   const option = {
     backgroundColor: 'transparent',
+    color: ['#FFD632', '#68A2F8', '#2778FF', '#1ED6C1'],
     tooltip: {
       show: true,
+      trigger: 'item',
+      borderColor: 'rgba(255,255,255,.3)',
+      backgroundColor: 'rgba(13,5,30,.6)',
+      borderWidth: 1,
       formatter: (params) => {
-        if (params.seriesType === 'pie' && params.data && params.data.name) {
-          const item = data.find(d => d.name === params.data.name)
-          return `${params.data.name}<br/>
-            <span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:${params.color};"></span>
-            ${item ? item.value : params.data.value}类`
-        }
+        if (!params?.data?.name) return ''
+        const realValue = Number(params.data.rawValue ?? params.data.value ?? 0)
+        const percent = total ? Math.round((realValue / total) * 100) : 0
+        return `${params.marker}${params.data.name}<br/>占比：${percent}%`
       }
     },
     series: [
-      // 按扇区单独控制半径：黄色、绿色在圆内收缩（半径更小）
-      makeSingleSliceSeries(0, '62%'), // 蓝色
-      makeSingleSliceSeries(1, '62%'), // 青色
-      makeSingleSliceSeries(2, '50%'), // 绿色（最小半径）
-      makeSingleSliceSeries(3, '54%'), // 黄色（比绿色稍大）
       {
-        // 中心蓝色小圈：空心，圈宽≈内空白半径
-        name: 'center-ring',
         type: 'pie',
-        radius: ['9%', '24%'],
-        center: ['50%', '52%'],
+        radius: ['0%', '0%'],
+        center: ['50%', '50%'],
+        hoverAnimation: false,
         silent: true,
-        z: 3,
         label: { show: false },
         labelLine: { show: false },
-        data: [
-          {
-            value: 1,
-            itemStyle: {
-              color: new echarts.graphic.RadialGradient(0.5, 0.35, 0.7, [
-                { offset: 0, color: '#FFFFFF' },
-                { offset: 0.6, color: '#60CCFF' },
-                { offset: 1, color: '#1E8BFF' }
-              ])
-            }
-          }
-        ]
+        data: [{ name: '', value: 0, itemStyle: { color: '#5EA7FE' } }]
       },
-      // 蓝色扇区外扩一圈：让蓝色超出当前圆
+      // 最中心蓝色细圈（你说的中间那一圈）
       {
-        name: 'workflow-blue-extend',
         type: 'pie',
-        // 让蓝色区域明显超出外圈边框：外半径略大于 outer-ring 的 71%
-        radius: ['62%', '78%'],
-        center: ['50%', '52%'],
-        clockwise: true,
-        startAngle: 220,
+        radius: ['22%', '23.2%'],
+        center: ['50%', '50%'],
+        hoverAnimation: false,
         silent: true,
-        z: 2,
+        zlevel: 12,
         label: { show: false },
         labelLine: { show: false },
-        data: [
-          {
-            name: '智能解译工作流',
-            // 与主扇区相同的数值，保证角度一致
-            value: visualValues[0],
-            itemStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(111, 211, 255, 0.9)' },
-                { offset: 1, color: 'rgba(32, 139, 255, 0.9)' }
-              ])
-            }
-          },
-          {
-            name: '生态评估工作流',
-            value: visualValues[1],
-            itemStyle: { color: 'rgba(0,0,0,0)' } // 角度保留，颜色完全透明
-          },
-          {
-            name: '应急监测工作流',
-            value: visualValues[2],
-            itemStyle: { color: 'rgba(0,0,0,0)' }
-          },
-          {
-            name: '其他分类工作流',
-            value: visualValues[3],
-            itemStyle: { color: 'rgba(0,0,0,0)' }
-          }
-        ]
+        data: [{ name: '', value: 1, itemStyle: { color: '#5EA7FE' } }]
       },
       {
-        name: 'outer-ring',
         type: 'pie',
-        radius: ['68%', '71%'],
-        center: ['50%', '52%'],
+        radius: ['90%', '95%'],
+        center: ['50%', '50%'],
+        hoverAnimation: false,
         silent: true,
-        z: 1,
         label: { show: false },
         labelLine: { show: false },
-        data: [
-          {
-            value: 1,
-            itemStyle: {
-              color: 'rgba(74, 176, 255, 0.6)'
-            }
-          }
-        ]
+        data: [{ name: '', value: 0, itemStyle: { color: '#5EA7FE' } }]
+      },
+      // 扇形中间穿过的蓝色细环（示例图中的中层蓝圈）
+      {
+        type: 'pie',
+        radius: ['54.5%', '55.5%'],
+        center: ['50%', '50%'],
+        hoverAnimation: false,
+        silent: true,
+        // 放在扇形下层：蓝/青扇形覆盖该圈，绿色因半径更小会在其外侧露出蓝圈
+        zlevel: 9,
+        label: { show: false },
+        labelLine: { show: false },
+        data: [{ name: '', value: 1, itemStyle: { color: '#5EA7FE' } }]
+      },
+      // 蓝色扇形外再加一圈蓝色圆环（细圈）
+      {
+        type: 'pie',
+        radius: ['72.5%', '73.5%'],
+        center: ['50%', '50%'],
+        hoverAnimation: false,
+        silent: true,
+        zlevel: 9,
+        label: { show: false },
+        labelLine: { show: false },
+        data: [{ name: '', value: 1, itemStyle: { color: '#5EA7FE' } }]
+      },
+      {
+        stack: 'a',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        roseType: 'area',
+        zlevel: 10,
+        hoverAnimation: true,
+        center: ['50%', '50%'],
+        label: { show: false },
+        labelLine: { show: false },
+        data: pieData
       }
     ]
   }

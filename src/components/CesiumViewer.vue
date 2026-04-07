@@ -34,6 +34,7 @@
             :src="src"
             alt=""
             class="marker-popup-img"
+            @error="onPopupImageError(idx)"
           />
         </div>
         <div class="marker-popup-text">
@@ -64,16 +65,11 @@ const LABEL_TEXT = Cesium.Color.WHITE
 const iconOrangeUrl = '/map/popup/定位 选中@2x.png'
 let iconBlueDataUrl = iconOrangeUrl
 
-// 当前只精确展示这 5 个点位（其它新增点先“隐藏”避免影响视野与点击拾取）
-const ACTIVE_MARKER_IDS = new Set(['beijing', 'bayannur', 'yingkou-bayuquan', 'dongying', 'wanning'])
-
+// 显示所有有效点位：lon/lat=0/0 属于占位数据（不展示）
 function isActiveMarker(m) {
-  const id = m?.id || m?.name
-  if (!ACTIVE_MARKER_IDS.has(id)) return false
   const lon = Number(m?.lon)
   const lat = Number(m?.lat)
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) return false
-  // lon/lat=0/0 属于占位数据：暂不显示
   if (lon === 0 && lat === 0) return false
   return true
 }
@@ -207,7 +203,7 @@ function geometryToRings(geometry) {
   return []
 }
 
-function ringLonLatToPositions(ring) {
+function ringLonLatToPositions(ring, height = 0) {
   const positions = []
   for (let i = 0; i < ring.length; i++) {
     const p = ring[i]
@@ -216,7 +212,7 @@ function ringLonLatToPositions(ring) {
     const lat = p[1]
     if (lon == null || lat == null) continue
     const wm = toWebMercator(lon, lat)
-    positions.push(fromWebMercator(wm.x, wm.y, 0))
+    positions.push(fromWebMercator(wm.x, wm.y, height))
   }
   return positions
 }
@@ -257,7 +253,9 @@ function openPopup(payload, worldPosition, clickScreen) {
 
   popupData.title = payload?.title || payload?.name || ''
   popupData.summary = payload?.summary || payload?.title || payload?.name || '暂无详细介绍'
-  popupData.images = Array.isArray(payload?.images) ? [...payload.images] : []
+  popupData.images = Array.isArray(payload?.images)
+    ? payload.images.filter((s) => typeof s === 'string' && s.trim().length > 0)
+    : []
 
   activePopupPosition = worldPosition
   popupAnchorScreenFallback =
@@ -280,6 +278,13 @@ function openPopup(payload, worldPosition, clickScreen) {
     refreshPopupNudge()
     requestAnimationFrame(() => refreshPopupNudge())
   })
+}
+
+function onPopupImageError(idx) {
+  // 图片加载失败（404/路径错误）时，移除该缩略图避免 broken icon
+  if (!Array.isArray(popupData.images)) return
+  if (idx < 0 || idx >= popupData.images.length) return
+  popupData.images.splice(idx, 1)
 }
 
 function closePopup() {
@@ -680,8 +685,10 @@ function setSelectedMarker(m, worldPosition) {
   selectedMarkerWorld = worldPosition || (m?.lon != null && m?.lat != null ? fromWebMercator(toWebMercator(m.lon, m.lat).x, toWebMercator(m.lon, m.lat).y, 0) : null)
 
   // 更新所有点位样式（图标蓝/橙）
-  markerEntities.forEach((entry, id) => {
-    const isSelected = id === nextId
+  markerEntities.forEach((entry) => {
+    const payload = entry?.billboardEntity?.popupPayload
+    const payloadKey = payload?.id || payload?.name || null
+    const isSelected = payloadKey === nextId
     if (entry?.billboardEntity?.billboard) {
       entry.billboardEntity.billboard.image = isSelected ? iconOrangeUrl : iconBlueDataUrl
     }
@@ -787,6 +794,7 @@ function addChinaBoundary3857() {
 
   // 方案二：增强轮廓层次（外发光 + 内实线 + 更明显的浅填充）
   const glowBlue = Cesium.Color.fromCssColorString('#42ACFF').withAlpha(0.95)
+  const edgeShadow = Cesium.Color.fromCssColorString('#2E5E8D').withAlpha(0.42)
   const innerWhite = Cesium.Color.WHITE.withAlpha(0.95)
 
   // 外发光轮廓（最先添加，作为底层光晕）
@@ -851,34 +859,35 @@ async function addChinaBoundaryFromGeoJson() {
   const features = Array.isArray(geojson?.features) ? geojson.features : []
   if (!features.length) throw new Error('empty china geojson features')
 
-  const glowBlue = Cesium.Color.fromCssColorString('#42ACFF').withAlpha(0.95)
-  const innerWhite = Cesium.Color.WHITE.withAlpha(0.92)
-  const provinceLine = Cesium.Color.fromCssColorString('#BDE9FF').withAlpha(0.35)
-  const fillColor = Cesium.Color.fromCssColorString('#EAF6FF').withAlpha(0.18)
+  const glowBlue = Cesium.Color.fromCssColorString('#42ACFF').withAlpha(0.92)
+  const innerWhite = Cesium.Color.WHITE.withAlpha(0.9)
+  const provinceLine = Cesium.Color.fromCssColorString('#BDE9FF').withAlpha(0.34)
+  // 恢复为最初的白色地图面（不要灰色）
+  const fillColor = Cesium.Color.fromCssColorString('#F8FCFF').withAlpha(0.98)
+  // 外线阴影降到很弱，仅保留一点立体边缘
+  const edgeShadow = Cesium.Color.fromCssColorString('#6F7782').withAlpha(0.1)
 
   const outerRings = []
-  const innerRings = []
   for (const f of features) {
     const rings = geometryToRings(f.geometry)
     for (let i = 0; i < rings.length; i++) {
       const ring = rings[i]
       if (!ring || ring.length < 3) continue
       if (i === 0) outerRings.push(ring)
-      else innerRings.push(ring)
     }
   }
 
-  // 省界淡线
+  // 省界线（细线条）
   for (const f of features) {
     const rings = geometryToRings(f.geometry)
     for (const ring of rings) {
-      const positions = ringLonLatToPositions(ring)
+      const positions = ringLonLatToPositions(ring, 0)
       if (positions.length < 2) continue
       viewer.entities.add({
         name: '中国省界线',
         polyline: {
           positions,
-          width: 1,
+          width: 0.85,
           material: provinceLine,
           clampToGround: true
         }
@@ -886,17 +895,30 @@ async function addChinaBoundaryFromGeoJson() {
     }
   }
 
-  // 外轮廓发光 + 实线
+  // 外轮廓：外发光 + 内实线
   for (const ring of outerRings) {
-    const positions = ringLonLatToPositions(ring)
+    const positions = ringLonLatToPositions(ring, 0)
     if (positions.length < 2) continue
+    // 外侧阴影层：让线条外沿有“瓜一点”的阴影感
+    viewer.entities.add({
+      name: '中国边界-geo-edgeShadow',
+      polyline: {
+        positions,
+        width: 12,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.12,
+          color: edgeShadow
+        }),
+        clampToGround: true
+      }
+    })
     viewer.entities.add({
       name: '中国边界-geo-glow',
       polyline: {
         positions,
-        width: 8,
+        width: 7,
         material: new Cesium.PolylineGlowMaterialProperty({
-          glowPower: 0.22,
+          glowPower: 0.2,
           color: glowBlue
         }),
         clampToGround: true
@@ -906,16 +928,16 @@ async function addChinaBoundaryFromGeoJson() {
       name: '中国边界-geo-solid',
       polyline: {
         positions,
-        width: 1.6,
-        material: innerWhite,
+        width: 1.35,
+        material: innerWhite.withAlpha(0.88),
         clampToGround: true
       }
     })
   }
 
-  // 区域浅填充（只填外环）
+  // 主体层（稳定可见的中国地图面）
   for (const ring of outerRings) {
-    const positions = ringLonLatToPositions(ring)
+    const positions = ringLonLatToPositions(ring, 0)
     if (positions.length < 3) continue
     viewer.entities.add({
       name: '中国区域-geo-fill',
@@ -930,7 +952,9 @@ async function addChinaBoundaryFromGeoJson() {
 }
 
 /** 与 SingleTileImageryProvider 一致：用于底图拉伸/覆盖映射 */
-let IMAGERY_RECT = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+// 背景图裁剪矩形：必须与背景图的拉伸设计匹配（否则会出现“中间底图不见了”）
+// 在保证匹配的前提下，略微加宽，让初始视野缩放时不容易露边。
+let IMAGERY_RECT = Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
 
 function computeMarkersBoundsRect(markers, { paddingScale = 1.45 } = {}) {
   let west = Infinity
@@ -951,7 +975,7 @@ function computeMarkersBoundsRect(markers, { paddingScale = 1.45 } = {}) {
     count++
   }
 
-  if (count === 0) return Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+  if (count === 0) return Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
 
   const lonSpan = Math.max(east - west, 0.01)
   const latSpan = Math.max(north - south, 0.01)
@@ -988,8 +1012,9 @@ function updateBaseImageryRectangle(rect) {
 function fitCameraToMarkerBounds(markers) {
   if (!viewer || !markers?.length) return
   // 以 markers 的经纬度外包框为准，给足 padding；底图 rectangle 保持固定，避免界面“奇怪”
-  const dest = computeMarkersBoundsRect(markers, { paddingScale: 1.45 })
-  const baseRect = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+  // 再缩小一点，让地图落在两侧虚线之间并保留左右空隙
+  const dest = computeMarkersBoundsRect(markers, { paddingScale: 1.72 })
+  const baseRect = Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
   const clipped = Cesium.Rectangle.simpleIntersection(dest, baseRect) || dest
   // 若 markers 很少（例如其它点暂时隐藏/占位），避免视野缩得太紧导致“界面不如以前”
   const baseLonSpan = baseRect.east - baseRect.west
@@ -1026,7 +1051,7 @@ function addMarkers3857(markers) {
 
   const counters = new Map()
 
-  markers.forEach((m) => {
+  markers.forEach((m, idx) => {
     const lon0 = Number(m.lon)
     const lat0 = Number(m.lat)
     let lon = lon0
@@ -1048,9 +1073,19 @@ function addMarkers3857(markers) {
     const wm = toWebMercator(lon, lat)
     const position = fromWebMercator(wm.x, wm.y, 0)
 
-    const id = m.id || m.name
+    // Cesium 的 EntityCollection 要求 entity.id 唯一；
+    // markers-popup.json 里可能会出现重复 id（你现在报的 huanghehenanduan 就是）。
+    // 为了不让整个 mounted 初始化失败，这里给 Cesium 实体拼一个唯一后缀，但保留 payload 原始 id/name 用于弹窗与选中态。
+    const logicalId = m.id || m.name
+    const entityId = `${logicalId}__${idx}`
+
+    const rawName = String(m?.name ?? '')
+    // 标牌是固定宽度（100px），长标题在标牌上用省略，避免继续出界；
+    // 完整标题仍在弹窗内展示。
+    const labelText = rawName.length > 8 ? `${rawName.slice(0, 8)}...` : rawName
+    const labelWidth = 100
     const billboardEntity = viewer.entities.add({
-      id,
+      id: entityId,
       name: m.name,
       position,
       billboard: {
@@ -1062,18 +1097,20 @@ function addMarkers3857(markers) {
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
       label: {
-        text: m.name,
+        text: labelText,
         font: '16px PingFangSC, PingFang SC, sans-serif',
         fillColor: LABEL_TEXT,
         style: Cesium.LabelStyle.FILL,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, -26),
+        width: labelWidth,
+        height: 30,
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
     })
     attachPopupPayload(billboardEntity, m)
-    markerEntities.set(id, { billboardEntity })
+    markerEntities.set(entityId, { billboardEntity })
   })
 }
 
@@ -1082,6 +1119,9 @@ function setupMarkerInteraction() {
   clickHandler.setInputAction((click) => {
     const screenPos = new Cesium.Cartesian2(click.position.x, click.position.y)
     viewer.scene.requestRender()
+
+    // 先走“最近点”命中：密集点/重叠时比 scene.pick 的第一个命中更稳定
+    if (tryOpenPopupByScreenProximity(screenPos)) return
 
     // 最稳定方案：邻域多点 pick，命中哪个实体就弹哪个
     const offsets = [
@@ -1107,6 +1147,7 @@ function setupMarkerInteraction() {
       return
     }
 
+    // 邻域 pick + proximity 都失败
     closePopup()
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
@@ -1134,6 +1175,9 @@ function setupMarkerInteraction() {
       const y = (evt.clientY - rect.top) * ratioY
       const screenPos = new Cesium.Cartesian2(x, y)
 
+      // 先走最近点
+      if (tryOpenPopupByScreenProximity(screenPos)) return
+
       const offsets = [
         [0, 0], [4, 0], [-4, 0], [0, 4], [0, -4],
         [8, 0], [-8, 0], [0, 8], [0, -8]
@@ -1156,13 +1200,16 @@ function setupMarkerInteraction() {
         viewer.scene.requestRender()
         return
       }
+
+      closePopup()
     }
     wrapEl.addEventListener('click', domClickHandler, true)
   }
 }
 
 onMounted(async () => {
-  viewer = new Cesium.Viewer(cesiumContainer.value, {
+  try {
+    viewer = new Cesium.Viewer(cesiumContainer.value, {
     animation: false,
     baseLayerPicker: false,
     fullscreenButton: false,
@@ -1185,7 +1232,7 @@ onMounted(async () => {
     }
   })
 
-  const imageryRectangle = Cesium.Rectangle.fromDegrees(60, 8, 150, 60)
+  const imageryRectangle = Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
   const styleBgImagery = new Cesium.SingleTileImageryProvider({
     url: bgImg,
     rectangle: imageryRectangle,
@@ -1207,18 +1254,18 @@ onMounted(async () => {
   viewer.scene.screenSpaceCameraController.enableZoom = true
   viewer.scene.screenSpaceCameraController.enableTilt = false
   viewer.scene.screenSpaceCameraController.enableLook = false
-  // 可继续缩小（滚轮向外），便于一眼看全所有点位；数值为相机距地表高度量级（米）
+  // 先给较大上限；fitCameraToMarkerBounds 后会基于初始视野再“锁住”最小缩放，避免露出两侧背景边缘
   viewer.scene.screenSpaceCameraController.maximumZoomDistance = 120000000
   viewer.scene.screenSpaceCameraController.minimumZoomDistance = 180000
 
   viewer.cesiumWidget.creditContainer.style.display = 'none'
 
-  try {
-    await addChinaBoundaryFromGeoJson()
-  } catch (e) {
-    console.warn('china geojson 加载失败，回退到示意边界', e)
-    addChinaBoundary3857()
-  }
+  // 边界加载不要阻塞点位渲染：网络慢/卡住时会导致 markers 和交互延后甚至不出现
+  addChinaBoundaryFromGeoJson()
+    .catch((e) => {
+      console.warn('china geojson 加载失败/超时，回退到示意边界', e)
+      addChinaBoundary3857()
+    })
 
   iconBlueDataUrl = await createBlueMarkerIconDataUrlFromOrange(iconOrangeUrl)
   // 需要导出蓝色 PNG 文件时：URL 加 ?exportBlueIcon=1
@@ -1238,13 +1285,22 @@ onMounted(async () => {
   } catch (e) {
     console.warn('markers-popup.json 加载失败', e)
   }
+  const markerExtras = {
+    aircraftModel: '',
+    flightTime: '',
+    payloadType: '',
+    missionType: '',
+    description: '',
+    operationParams: '',
+    surfaceFeatures: ''
+  }
   if (!markers.length) {
     markers = [
-      { id: 'beijing', name: '北京', lon: 116.4074, lat: 39.9042, title: '北京', summary: '', images: [] },
-      { id: 'bayannur', name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [] },
-      { id: 'yingkou-bayuquan', name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [] },
-      { id: 'dongying', name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [] },
-      { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [] }
+      { id: 'beijing', name: '北京', lon: 116.4074, lat: 39.9042, title: '北京', summary: '', images: [], ...markerExtras },
+      { id: 'bayannur', name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [], ...markerExtras },
+      { id: 'yingkou-bayuquan', name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [], ...markerExtras },
+      { id: 'dongying', name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [], ...markerExtras },
+      { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [], ...markerExtras }
     ]
   }
   const activeMarkers = markers.filter(isActiveMarker)
@@ -1253,17 +1309,37 @@ onMounted(async () => {
     activeMarkers.length > 0
       ? activeMarkers
       : [
-          { id: 'beijing', name: '北京', lon: 116.4074, lat: 39.9042, title: '北京', summary: '', images: [] },
-          { id: 'bayannur', name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [] },
-          { id: 'yingkou-bayuquan', name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [] },
-          { id: 'dongying', name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [] },
-          { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [] }
+          { id: 'beijing', name: '北京', lon: 116.4074, lat: 39.9042, title: '北京', summary: '', images: [], ...markerExtras },
+          { id: 'bayannur', name: '巴彦淖尔', lon: 107.386, lat: 40.751, title: '巴彦淖尔', summary: '', images: [], ...markerExtras },
+          { id: 'yingkou-bayuquan', name: '营口鲅鱼圈', lon: 122.235, lat: 40.667, title: '营口鲅鱼圈', summary: '', images: [], ...markerExtras },
+          { id: 'dongying', name: '东营数据', lon: 118.505, lat: 37.438, title: '东营数据', summary: '', images: [], ...markerExtras },
+          { id: 'wanning', name: '海南万宁', lon: 110.389, lat: 18.799, title: '海南万宁', summary: '', images: [], ...markerExtras }
         ]
+
+  if (typeof window !== 'undefined') {
+    // 方便你在浏览器控制台确认：json 是否加载成功、点位是否被过滤
+    console.info('[CesiumViewer]', {
+      markersTotal: markers?.length ?? 0,
+      activeMarkers: activeMarkers?.length ?? 0,
+      safeMarkers: safeMarkers?.length ?? 0
+    })
+  }
 
   markersForPick = safeMarkers
   addMarkers3857(safeMarkers)
   fitCameraToMarkerBounds(safeMarkers)
-  setupMarkerInteraction()
+
+  // 基于初始 fit 结果：把“最远缩放（最大相机高度）”锁死，避免再缩远就露边
+  const initH = viewer.camera?.positionCartographic?.height
+  if (Number.isFinite(initH) && initH > 0) {
+    // 允许极小的进一步缩放，防止“再缩远就露边”
+    viewer.scene.screenSpaceCameraController.maximumZoomDistance = initH * 1.1
+  }
+    setupMarkerInteraction()
+  } catch (e) {
+    // 避免 mounted hook 未捕获异常导致组件中断；同时把根因打印出来
+    console.error('[CesiumViewer] mounted init failed', e)
+  }
 })
 
 onUnmounted(() => {
@@ -1408,7 +1484,7 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
   width: 308px;
-  max-height: 163px;
+  max-height: 220px;
   height: auto;
   min-height: 0;
   overflow-y: auto;
