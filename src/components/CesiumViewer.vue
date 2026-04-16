@@ -48,7 +48,8 @@
 import { ref, computed, onMounted, onUnmounted, reactive, nextTick } from 'vue'
 import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
-import bgImg from '@/assets/content/背景.png'
+// 影像瓦片服务地址（XYZ 格式，{z}/{x}/{y}）
+const TILE_URL = 'http://agri.cangling.cn:22002/api/v1/map3/ce0a07f5ef1062b8c90047d2051efb0c742bb8795bc9be5e24b1bbf7016f781a/{z}/{x}/{y}.png'
 
 const cesiumWrapRef = ref(null)
 const cesiumContainer = ref(null)
@@ -106,6 +107,12 @@ const selectedBoxStyle = computed(() => ({
 
 /** marker id -> { billboardEntity } */
 const markerEntities = new Map()
+
+// 聚合相关
+let clusterEntities = [] // 聚合点实体数组
+let allMarkersData = [] // 所有原始点位数据
+const CLUSTER_PIXEL_RADIUS = 60 // 聚合像素半径
+const CLUSTER_ZOOM_THRESHOLD = 800000 // 相机高度阈值，低于此值显示具体点位
 
 const POPUP_W = 446
 const POPUP_H_EST = 340
@@ -997,14 +1004,12 @@ function updateBaseImageryRectangle(rect) {
   if (!viewer || !rect) return
   IMAGERY_RECT = rect
   viewer.imageryLayers.removeAll()
-  const styleBgImagery = new Cesium.SingleTileImageryProvider({
-    url: bgImg,
-    rectangle: IMAGERY_RECT,
-    tileWidth: 2048,
-    tileHeight: 2048,
-    projection: webMercatorProjection
+  const tileImagery = new Cesium.UrlTemplateImageryProvider({
+    url: TILE_URL,
+    minimumLevel: 0,
+    maximumLevel: 18
   })
-  viewer.imageryLayers.addImageryProvider(styleBgImagery)
+  viewer.imageryLayers.addImageryProvider(tileImagery)
   viewer.scene.requestRender()
 }
 
@@ -1029,10 +1034,13 @@ function fitCameraToMarkerBounds(markers) {
 }
 
 function addMarkers3857(markers) {
+  // 保存原始数据用于聚合计算
+  allMarkersData = markers.filter(isActiveMarker)
+  
   // 若 markers-popup.json 中出现大量 lon/lat 完全相同的点，会导致标牌重叠、点击/拾取无法区分。
   // 这里对同坐标点做一个很小的环形分散（仅为可点击与弹窗定位服务）。
   const groups = new Map()
-  for (const m of markers) {
+  for (const m of allMarkersData) {
     const lon = Number(m?.lon)
     const lat = Number(m?.lat)
     if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue
@@ -1051,7 +1059,7 @@ function addMarkers3857(markers) {
 
   const counters = new Map()
 
-  markers.forEach((m, idx) => {
+  allMarkersData.forEach((m, idx) => {
     const lon0 = Number(m.lon)
     const lat0 = Number(m.lat)
     let lon = lon0
@@ -1069,26 +1077,113 @@ function addMarkers3857(markers) {
       lon = lon0 + radiusLon * Math.cos(angle)
       lat = lat0 + radiusLat * Math.sin(angle)
     }
+    // 保存分散后的坐标
+    m._scatterLon = lon
+    m._scatterLat = lat
+  })
 
-    const wm = toWebMercator(lon, lat)
+  // 根据当前相机高度决定是否聚合
+  updateClusterVisibility()
+}
+
+/**
+ * 计算点位在屏幕上的距离（像素）
+ */
+function getScreenDistance(m1, m2) {
+  if (!viewer) return Infinity
+  const wm1 = toWebMercator(m1._scatterLon || m1.lon, m1._scatterLat || m1.lat)
+  const wm2 = toWebMercator(m2._scatterLon || m2.lon, m2._scatterLat || m2.lat)
+  const pos1 = fromWebMercator(wm1.x, wm1.y, 0)
+  const pos2 = fromWebMercator(wm2.x, wm2.y, 0)
+  const screen1 = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, pos1)
+  const screen2 = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, pos2)
+  if (!screen1 || !screen2) return Infinity
+  const dx = screen1.x - screen2.x
+  const dy = screen1.y - screen2.y
+  return Math.sqrt(dx * dx + dy * dy)
+}
+
+/**
+ * 执行聚合计算
+ */
+function computeClusters() {
+  if (!viewer || allMarkersData.length === 0) return []
+  
+  const clusters = []
+  const visited = new Set()
+  
+  for (let i = 0; i < allMarkersData.length; i++) {
+    if (visited.has(i)) continue
+    
+    const cluster = {
+      markers: [allMarkersData[i]],
+      centerLon: allMarkersData[i]._scatterLon || allMarkersData[i].lon,
+      centerLat: allMarkersData[i]._scatterLat || allMarkersData[i].lat
+    }
+    visited.add(i)
+    
+    // 查找邻近点
+    for (let j = i + 1; j < allMarkersData.length; j++) {
+      if (visited.has(j)) continue
+      const dist = getScreenDistance(allMarkersData[i], allMarkersData[j])
+      if (dist < CLUSTER_PIXEL_RADIUS) {
+        cluster.markers.push(allMarkersData[j])
+        visited.add(j)
+      }
+    }
+    
+    // 重新计算聚类中心
+    if (cluster.markers.length > 1) {
+      let sumLon = 0, sumLat = 0
+      cluster.markers.forEach(m => {
+        sumLon += m._scatterLon || m.lon
+        sumLat += m._scatterLat || m.lat
+      })
+      cluster.centerLon = sumLon / cluster.markers.length
+      cluster.centerLat = sumLat / cluster.markers.length
+    }
+    
+    clusters.push(cluster)
+  }
+  
+  return clusters
+}
+
+/**
+ * 清除所有聚合点
+ */
+function clearClusterEntities() {
+  clusterEntities.forEach(entity => {
+    viewer.entities.remove(entity)
+  })
+  clusterEntities = []
+}
+
+/**
+ * 渲染聚合点
+ */
+function renderClusters(clusters) {
+  clearClusterEntities()
+  
+  clusters.forEach((cluster, idx) => {
+    const wm = toWebMercator(cluster.centerLon, cluster.centerLat)
     const position = fromWebMercator(wm.x, wm.y, 0)
-
-    // Cesium 的 EntityCollection 要求 entity.id 唯一；
-    // markers-popup.json 里可能会出现重复 id（你现在报的 huanghehenanduan 就是）。
-    // 为了不让整个 mounted 初始化失败，这里给 Cesium 实体拼一个唯一后缀，但保留 payload 原始 id/name 用于弹窗与选中态。
-    const logicalId = m.id || m.name
-    const entityId = `${logicalId}__${idx}`
-
-    const rawName = String(m?.name ?? '')
-    // 标牌是固定宽度（100px），长标题在标牌上用省略，避免继续出界；
-    // 完整标题仍在弹窗内展示。
-    const labelText = rawName.length > 8 ? `${rawName.slice(0, 8)}...` : rawName
-    const labelWidth = 100
-    const billboardEntity = viewer.entities.add({
-      id: entityId,
-      name: m.name,
+    
+    const count = cluster.markers.length
+    const isCluster = count > 1
+    
+    // 聚合点使用圆形图标，单点使用普通图标
+    const entity = viewer.entities.add({
+      id: `cluster_${idx}`,
       position,
-      billboard: {
+      billboard: isCluster ? {
+        image: createClusterIcon(count),
+        width: 50,
+        height: 50,
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      } : {
         image: iconBlueDataUrl,
         width: 100,
         height: 48,
@@ -1096,22 +1191,128 @@ function addMarkers3857(markers) {
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
-      label: {
-        text: labelText,
+      label: isCluster ? undefined : {
+        text: cluster.markers[0].name.length > 8 
+          ? `${cluster.markers[0].name.slice(0, 8)}...` 
+          : cluster.markers[0].name,
         font: '16px PingFangSC, PingFang SC, sans-serif',
         fillColor: LABEL_TEXT,
         style: Cesium.LabelStyle.FILL,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, -26),
-        width: labelWidth,
-        height: 30,
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
     })
-    attachPopupPayload(billboardEntity, m)
-    markerEntities.set(entityId, { billboardEntity })
+    
+    // 保存聚类信息到实体
+    entity.clusterData = cluster
+    if (!isCluster) {
+      attachPopupPayload(entity, cluster.markers[0])
+    }
+    
+    clusterEntities.push(entity)
   })
+}
+
+/**
+ * 创建聚合点图标（Canvas）
+ */
+function createClusterIcon(count) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 100
+  canvas.height = 100
+  const ctx = canvas.getContext('2d')
+  
+  // 外圈
+  ctx.beginPath()
+  ctx.arc(50, 50, 40, 0, 2 * Math.PI)
+  ctx.fillStyle = 'rgba(66, 172, 255, 0.3)'
+  ctx.fill()
+  
+  // 内圈
+  ctx.beginPath()
+  ctx.arc(50, 50, 30, 0, 2 * Math.PI)
+  ctx.fillStyle = '#42ACFF'
+  ctx.fill()
+  
+  // 文字
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = 'bold 24px PingFangSC, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(count > 99 ? '99+' : String(count), 50, 50)
+  
+  return canvas.toDataURL()
+}
+
+/**
+ * 根据相机高度更新聚合/分散显示
+ */
+function updateClusterVisibility() {
+  if (!viewer) return
+  
+  const height = viewer.camera.positionCartographic?.height || 0
+  
+  if (height > CLUSTER_ZOOM_THRESHOLD) {
+    // 远视图：显示聚合点
+    // 先清除具体点位
+    markerEntities.forEach((entry) => {
+      if (entry?.billboardEntity) {
+        viewer.entities.remove(entry.billboardEntity)
+      }
+    })
+    markerEntities.clear()
+    
+    // 计算并渲染聚合
+    const clusters = computeClusters()
+    renderClusters(clusters)
+  } else {
+    // 近视图：显示具体点位
+    clearClusterEntities()
+    
+    // 渲染具体点位
+    allMarkersData.forEach((m, idx) => {
+      const lon = m._scatterLon || m.lon
+      const lat = m._scatterLat || m.lat
+      const wm = toWebMercator(lon, lat)
+      const position = fromWebMercator(wm.x, wm.y, 0)
+      
+      const logicalId = m.id || m.name
+      const entityId = `${logicalId}__${idx}`
+      
+      const rawName = String(m?.name ?? '')
+      const labelText = rawName.length > 8 ? `${rawName.slice(0, 8)}...` : rawName
+      
+      const billboardEntity = viewer.entities.add({
+        id: entityId,
+        name: m.name,
+        position,
+        billboard: {
+          image: iconBlueDataUrl,
+          width: 100,
+          height: 48,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        label: {
+          text: labelText,
+          font: '16px PingFangSC, PingFang SC, sans-serif',
+          fillColor: LABEL_TEXT,
+          style: Cesium.LabelStyle.FILL,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -26),
+          width: 100,
+          height: 30,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      })
+      attachPopupPayload(billboardEntity, m)
+      markerEntities.set(entityId, { billboardEntity })
+    })
+  }
 }
 
 function setupMarkerInteraction() {
@@ -1232,17 +1433,14 @@ onMounted(async () => {
     }
   })
 
-  const imageryRectangle = Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
-  const styleBgImagery = new Cesium.SingleTileImageryProvider({
-    url: bgImg,
-    rectangle: imageryRectangle,
-    tileWidth: 2048,
-    tileHeight: 2048,
-    projection: webMercatorProjection
+  const tileImagery = new Cesium.UrlTemplateImageryProvider({
+    url: TILE_URL,
+    minimumLevel: 0,
+    maximumLevel: 18
   })
 
   viewer.imageryLayers.removeAll()
-  viewer.imageryLayers.addImageryProvider(styleBgImagery)
+  viewer.imageryLayers.addImageryProvider(tileImagery)
 
   // 供叠加层（ECharts 等）获取屏幕坐标使用
   if (typeof window !== 'undefined') {
@@ -1257,6 +1455,11 @@ onMounted(async () => {
   // 先给较大上限；fitCameraToMarkerBounds 后会基于初始视野再“锁住”最小缩放，避免露出两侧背景边缘
   viewer.scene.screenSpaceCameraController.maximumZoomDistance = 120000000
   viewer.scene.screenSpaceCameraController.minimumZoomDistance = 180000
+
+  // 监听相机变化，动态更新聚合显示
+  viewer.camera.changed.addEventListener(() => {
+    updateClusterVisibility()
+  })
 
   viewer.cesiumWidget.creditContainer.style.display = 'none'
 
@@ -1355,6 +1558,8 @@ onUnmounted(() => {
     if (typeof window !== 'undefined' && window.__airCesiumViewer === viewer) {
       delete window.__airCesiumViewer
     }
+    // 清理聚合实体
+    clearClusterEntities()
     viewer.destroy()
     viewer = null
   }

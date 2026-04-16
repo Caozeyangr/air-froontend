@@ -4,6 +4,8 @@ import { applyTokenFromQuery } from '../utils/authToken.js'
 // 导入页面组件
 import Login from '../view/Login.vue'
 import Home from '../view/Home.vue'
+import MiningTask from '../view/MiningTask.vue'
+import Workstation from '../view/workstation.vue'
 
 // 创建路由实例
 const router = createRouter({
@@ -24,6 +26,18 @@ const router = createRouter({
       name: 'Home',
       component: Home,
       meta: { requiresAuth: true } // 首页需要认证
+    },
+    {
+      path: '/workstation',
+      name: 'Workstation',
+      component: Workstation,
+      meta: { requiresAuth: true } // 工作站需要认证
+    },
+    {
+      path: '/mining-task',
+      name: 'MiningTask',
+      component: MiningTask,
+      meta: { requiresAuth: true } // 任务管理需要认证
     },
     {
       path: '/:pathMatch(.*)*',
