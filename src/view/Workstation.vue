@@ -3,24 +3,32 @@
     <div class="left-section">
       <!-- 顶部区域 -->
       <div class="top-section">
-        <!-- 当前时间 -->
-        <div class="time-card card">
-          <div class="card-title">当前时间</div>
+        <!-- 当前时间 --> 
+        <div class="time-card card" :style="{ backgroundImage: `url(${timeCardBg})`, backgroundSize: '100% 100%', backgroundPosition: 'center' }">
+         <div class="card-title">当前时间</div> 
           <div class="time-content">
+            <div class="date-time-wrapper">
             <div class="date-row">
               <span class="year">{{ currentTime.year }}</span>
+              <span class="separator">|</span>
               <span class="month-day">{{ currentTime.month }}月{{ currentTime.day }}日</span>
+              <span class="separator">|</span>
               <span class="week">星期{{ currentTime.weekDay }}</span>
             </div>
             <div class="time-row">
               <span class="time">{{ currentTime.time }}</span>
-              <div class="clock-icon">🕒</div>
+            </div>
+
+            </div>
+        
+            <div>
+              <div ref="chartRef" class="clock-container"></div>
             </div>
           </div>
         </div>
 
         <!-- 资源申请记录 -->
-        <div class="resource-apply-card card">
+        <div class="resource-apply-card card" :style="{ backgroundImage: `url(${resourceApplyBg})`, backgroundSize: '100% 100%', backgroundPosition: 'center' }">
           <div class="card-title">资源申请记录</div>
           <div class="resource-stats">
             <div class="stat-item">
@@ -169,7 +177,7 @@
     </div>
     <div class="right-section">
       <!-- 物理机状态 -->
-      <div class="physical-status-card card">
+      <div class="physical-status-card card" :style="{ backgroundImage: `url(${physicalStatusBg})`, backgroundSize: '100% 100%', backgroundPosition: 'center' }">
         <div class="card-title">物理机状态</div>
         <div class="physical-stats">
           <div class="phys-item">
@@ -217,6 +225,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
+import timeCardBg from '../assets/workstation/背景-当前时间@2x.png'
+import resourceApplyBg from '../assets/workstation/背景-资源申请记录@2x.png'
+import physicalStatusBg from '../assets/workstation/背景-物理机状态@2x.png'
 
 // ========== 时间数据 ==========
 const currentTime = ref({
@@ -261,7 +272,7 @@ const resourceAllocation = ref({
   cpu: {
     total: 7820,
     allocated: 5364,
-    usageRate: 68.59
+    usageRate: 23.66
   },
   memory: {
     total: 89091.56,
@@ -271,23 +282,47 @@ const resourceAllocation = ref({
   storage: {
     total: 0,
     allocated: 0,
-    usageRate: 68.59
+    usageRate: 54.33
   },
   gpu: {
     total: 1462,
     allocated: 1238,
-    usageRate: 68.59
+    usageRate: 87.99
   }
 })
 
 // ========== 设备GPU使用量数据（柱状图） ==========
 const gpuUsageData = ref({
   categories: ['设备1', '设备2', '设备3'],
-  series: [
-    { name: '申请', data: [120, 220, 150], color: '#5470c6' },
-    { name: '审核', data: [180, 280, 200], color: '#91cc75' },
-    { name: '运行', data: [240, 350, 280], color: '#fac858' }
-  ]
+  // series: [
+  //   { 
+  //     name: '申请', 
+  //     data: [120, 220, 150], 
+  //     color: '#5470c6',
+  //     topColor: '#008AFFFF',
+  //     bottomColor: '#3C6DCDFF',
+  //     topCircleColor: '#82F3FFFF'
+  //   },
+  //   { 
+  //     name: '审核', 
+  //     data: [180, 280, 200], 
+  //     color: '#91cc75',
+  //     topColor: '#67C23A',
+  //     bottomColor: '#4CAF50',
+  //     topCircleColor: '#B3E5FC'
+  //   },
+  //   { 
+  //     name: '运行', 
+  //     data: [240, 350, 280], 
+  //     color: '#fac858',
+  //     topColor: '#E6A23C',
+  //     bottomColor: '#F56C6C',
+  //     topCircleColor: '#FFD700'
+  //   }
+  // ]
+  data1: [120, 220, 150],
+  data2: [180, 280, 200],
+  data3: [240, 350, 280]
 })
 
 // ========== 资源使用率趋势数据 ==========
@@ -343,18 +378,22 @@ const cpuTrendChart = ref(null)
 const memoryTrendChart = ref(null)
 const storageTrendChart = ref(null)
 const gpuTrendChart = ref(null)
+const chartRef = ref(null)
+let myChart = null
+let timer = null
 
 let charts = []
 
 // ========== 图表配置 ==========
 const initGpuUsageChart = () => {
   const chart = echarts.init(gpuUsageChart.value)
+  const barWidth = 20
   const option = {
     grid: {
       left: '3%',
       right: '4%',
       bottom: '3%',
-      top: '10%',
+      top: '15%',
       containLabel: true
     },
     xAxis: {
@@ -365,17 +404,103 @@ const initGpuUsageChart = () => {
     },
     yAxis: {
       type: 'value',
+      name: '个',
+      nameTextStyle: {
+        color: '#666',
+        padding: [0, 0, 0, -20]
+      },
       axisLine: { show: false },
-      splitLine: { lineStyle: { color: '#eee' } },
+      splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
       axisLabel: { color: '#666' }
     },
-    series: gpuUsageData.value.series.map(s => ({
-      name: s.name,
-      type: 'bar',
-      data: s.data,
-      itemStyle: { color: s.color },
-      barWidth: '20%'
-    }))
+    series: [
+      // --------------------- 申请 ---------------------
+      {
+        name: '申请',
+        type: 'bar',
+        barWidth: barWidth,
+        z: 19,
+        backgroundStyle: {
+          color: 'rgba(232, 245, 255, 0.8)'
+        },
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#006caf' },
+            { offset: 1, color: '#04f2ff' }
+          ])
+        },
+        data: gpuUsageData.value.data1,
+      },
+      {
+        name: '申请-顶圆',
+        type: 'pictorialBar',
+        silent: true,
+        symbolSize: [barWidth, 8],
+        symbolOffset: [-22, -4],
+        symbolPosition: 'end',
+        z: 22,
+        color: '#0df3ff',
+        data: gpuUsageData.value.data1,
+      },
+
+      // --------------------- 审核 ---------------------
+      {
+        name: '审核',
+        type: 'bar',
+        barWidth: barWidth,
+        z: 19,
+        backgroundStyle: {
+          color: 'rgba(232, 245, 255, 0.8)'
+        },
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#369d6f' },
+            { offset: 1, color: '#6ffd9e' }
+          ])
+        },
+        data: gpuUsageData.value.data2,
+      },
+      {
+        name: '审核-顶圆',
+        type: 'pictorialBar',
+        silent: true,
+        symbolSize: [barWidth, 8],
+        symbolOffset: [0, -4],
+        symbolPosition: 'end',
+        z: 22,
+        color: '#6ffd9e',
+        data: gpuUsageData.value.data2,
+      },
+
+      // --------------------- 运行 ---------------------
+      {
+        name: '运行',
+        type: 'bar',
+        barWidth: barWidth,
+        z: 19,
+        backgroundStyle: {
+          color: 'rgba(232, 245, 255, 0.8)'
+        },
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#c97d2b' },
+            { offset: 1, color: '#ffbc5e' }
+          ])
+        },
+        data: gpuUsageData.value.data3,
+      },
+      {
+        name: '运行-顶圆',
+        type: 'pictorialBar',
+        silent: true,
+        symbolSize: [barWidth, 8],
+        symbolOffset: [22, -4],
+        symbolPosition: 'end',
+        z: 22,
+        color: '#ffbc5e',
+        data: gpuUsageData.value.data3,
+      }
+    ]
   }
   chart.setOption(option)
   charts.push(chart)
@@ -383,45 +508,139 @@ const initGpuUsageChart = () => {
 
 const initGaugeChart = (chartRef, value, name, color) => {
   const chart = echarts.init(chartRef)
+  const max = 5
   const option = {
-    series: [{
-      type: 'gauge',
-      startAngle: 90,
-      endAngle: -270,
-      radius: '80%',
-      pointer: { show: false },
-      progress: {
-        show: true,
-        overlap: false,
-        roundCap: true,
-        clip: false,
-        itemStyle: { color: color }
-      },
-      axisLine: {
-        lineStyle: { width: 8, color: [[1, '#e6e6e6']] }
-      },
+    angleAxis: {
+      show: true,
+      axisLine: { show: false },
+      axisLabel: { show: false },
       splitLine: { show: false },
+      min: 0,
+      max: 5.8,
+      startAngle: 245.95,
+      clockwise: true,
+      splitNumber: 120,
+      axisTick: {
+        show: true,
+        length: 6,
+        polar: {
+          radius: '40%',
+        },
+        axisTick: {
+          length: 10,
+        },
+        lineStyle: {
+          width: 2,
+          color: 'rgba(183, 220, 246, 0.3)',
+        },
+      },
+    },
+    radiusAxis: {
+      type: 'category',
+      axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: { show: false },
-      data: [{
-        value: value,
-        name: name,
-        title: {
-          offsetCenter: ['0%', '0%'],
-          fontSize: 12,
-          color: '#666'
+      data: ['a', 'b', 'c'],
+      z: 10,
+    },
+    polar: {
+      radius: '90%',
+    },
+    series: [
+      {
+        type: 'bar',
+        data: [, , value / 100 * max],
+        z: 1,
+        coordinateSystem: 'polar',
+        barMaxWidth: 40,
+        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#7E6CFF' },
+          { offset: 1, color: '#59B5FF' },
+        ]),
+        barGap: '-100%',
+      },
+      {
+        type: 'bar',
+        data: [, , max],
+        z: 0,
+        silent: true,
+        coordinateSystem: 'polar',
+        barMaxWidth: 40,
+        color: 'rgba(213, 242, 250, 0.6)',
+        barGap: '-100%',
+      },
+      {
+        type: 'pie',
+        labelLine: { show: false },
+        z: 0,
+        radius: 30,
+        animation: false,
+        silent: true,
+        itemStyle: {
+          color: '#fff',
+          borderColor: '#A8EDF7',
+          borderWidth: 2,
+          shadowColor: 'rgba(183, 220, 246, 0.5)',
+          shadowBlur: 2,
+          shadowOffsetY: 2,
         },
-        detail: {
-          valueAnimation: true,
-          offsetCenter: ['0%', '-20%'],
-          fontSize: 16,
-          fontWeight: 'bold',
-          formatter: '{value}%',
-          color: '#333'
-        }
-      }],
-      detail: { fontSize: 16 }
-    }]
+        data: [{ value: 100 }],
+      },
+      {
+        type: 'pie',
+        radius: ['88%', '82%'],
+        hoverAnimation: false,
+        startAngle: 225,
+        endAngle: 0,
+        data: [
+          {
+            name: '',
+            value: (value / 100 * max) / 5,
+            itemStyle: { color: 'rgba(0,0,0,0)' }
+          },
+          
+          {
+            name: '',
+            value: 1.33 - (value / 100 * max) / 5,
+            itemStyle: { color: 'rgba(255,255,255,0)' }
+          },
+        ],
+      },
+      {
+        type: 'pie',
+        radius: 32,
+        labelLine: { show: false },
+        label: {
+          show: true,
+          position: 'center',
+          offset: [0, 5],
+          formatter: function(params) {
+            return '{value|' + value + '%}\n{name|' + name + '}';
+          },
+          rich: {
+            value: {
+              fontSize: 16,
+              fontWeight: 'bold',
+              fontFamily: 'DIN Alternate Bold',
+              color: '#333',
+              lineHeight: 20
+            },
+            name: {
+              fontSize: 12,
+              color: '#666',
+              lineHeight: 16
+            }
+          }
+        },
+        animation: false,
+        silent: true,
+        itemStyle: {
+          color: 'transparent'
+        },
+        data: [{ value: 100 }],
+      }
+    ],
+    tooltip: { show: false },
   }
   chart.setOption(option)
   charts.push(chart)
@@ -449,25 +668,230 @@ const initTrendChart = (chartRef, data, color) => {
       type: 'value',
       max: 100,
       axisLine: { show: false },
-      splitLine: { lineStyle: { color: '#f0f0f0' } },
-      axisLabel: { color: '#999', fontSize: 10 }
+      splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
+      axisLabel: { color: '#666', fontSize: 10 }
     },
     series: [{
       type: 'line',
       data: data.data,
-      smooth: true,
+      smooth: false,
       symbol: 'none',
-      lineStyle: { color: color, width: 2 },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: color + '40' },
-          { offset: 1, color: color + '00' }
+      lineStyle: {
+        width: 2,
+        color: new echarts.graphic.LinearGradient(0, 1, 0, 0, [{
+          offset: 0,
+          color: '#1981E1FF'
+        },
+        {
+          offset: 1,
+          color: '#F27336FF'
+        }
         ])
-      }
+      },
+      // areaStyle: {
+      //   color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+      //     { offset: 0, color: color + '40' },
+      //     { offset: 1, color: color + '00' }
+      //   ])
+      // }
     }]
   }
   chart.setOption(option)
   charts.push(chart)
+}
+
+// 初始化时钟图表
+const initChart = () => {
+  myChart = echarts.init(chartRef.value)
+
+  const option = {
+    backgroundColor: 'transparent',
+     grid: {
+        show: false,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+    },
+    series: [
+  // 时针
+  {
+    name: 'hour',
+    type: 'gauge',
+    startAngle: 90,
+    endAngle: -270,
+    min: 0,
+    max: 12,
+    splitNumber: 12,
+    clockwise: true,
+    radius: '100%',
+    center: ['50%', '50%'],
+    axisLine: {
+      lineStyle: {
+        width: 2,
+        color: [[1, 'rgba(195,200,202,0.8)']],
+        shadowColor: 'rgba(195,200,202,0.5)',
+         shadowBlur: 2
+      }
+    },
+    splitLine: {
+      distance: 0,
+      length: 4,
+      lineStyle: {
+        color: 'rgba(195,200,202,0.8)',
+        shadowColor: 'rgba(195,200,202,0.5)',
+        shadowBlur: 1,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0
+      }
+    },
+    axisTick: {
+      distance: 0,
+      length: 2,
+      splitNumber: 4,
+      lineStyle: {
+        color: 'rgba(195,200,202,0.6)',
+        shadowColor: 'rgba(195,200,202,0.3)',
+        shadowBlur: 1,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0
+      }
+    },
+    axisLabel: {
+      fontSize: 7,
+      distance: 3,
+      formatter: value => value === 0 ? '' : value
+    },
+    pointer: {
+      width: 1.5,                    
+      length: '65%',
+      offsetCenter: [0, 0],
+      itemStyle: {
+        color: '#D3D3D3',            // 浅灰色
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 4
+      }
+    },
+    detail: { show: false, width: 0, height: 0, offsetCenter: [0, 0] },
+    silent: true,
+    title: { show: false },
+    data: [{ value: 0 }]
+  },
+  // 分针
+  {
+    name: 'minute',
+    type: 'gauge',
+    startAngle: 90,
+    endAngle: -270,
+    min: 0,
+    max: 60,
+    clockwise: true,
+    radius: '100%',
+    center: ['50%', '50%'],
+    axisLine: { show: false },
+    splitLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { show: false },
+    pointer: {
+      width: 1.5,                   
+      length: '75%',
+      offsetCenter: [0, 0],
+      itemStyle: {
+        color: '#D3D3D3',            // 浅灰色
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 2
+      }
+    },
+    // anchor: {
+    //   show: true,
+    //   size: 5,
+    //   showAbove: false,
+    //   itemStyle: {
+    //     borderWidth: 6,
+    //     borderColor: '#D3D3D3',      // 锚点边框改为浅灰色
+    //     shadowColor: 'rgba(0, 0, 0, 0.3)',
+    //     shadowBlur: 8,
+    //     shadowOffsetX: 2,
+    //     shadowOffsetY: 4
+    //   }
+    // },
+    detail: { show: false, width: 0, height: 0, offsetCenter: [0, 0] },
+    silent: true,
+    data: [{ value: 0 }]
+  },
+  // 秒针
+  {
+    name: 'second',
+    type: 'gauge',
+    startAngle: 90,
+    endAngle: -270,
+    min: 0,
+    max: 60,
+    animationEasingUpdate: 'bounceOut',
+    clockwise: true,
+    radius: '100%',
+    center: ['50%', '50%'],
+    axisLine: { show: false },
+    splitLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { show: false },
+    pointer: {
+      width: 1.5,                    // 改为细长一致宽度
+      length: '85%',
+      offsetCenter: [0, 0],
+      itemStyle: {
+        color: '#D3D3D3',            // 浅灰色
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 4
+      }
+    },
+    anchor: {
+      show: true,
+      size: 3,
+      showAbove: true,
+      itemStyle: {
+        color: '#D3D3D3',            // 锚点填充改为浅灰色
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 4
+      }
+    },
+    detail: { show: false, width: 0, height: 0, offsetCenter: [0, 0] },
+    silent: true,
+    data: [{ value: 0 }]
+  }
+]
+  }
+
+  myChart.setOption(option)
+  startTime()
+  charts.push(myChart)
+}
+
+// 启动时钟定时器
+const startTime = () => {
+  timer = setInterval(() => {
+    const date = new Date()
+    const second = date.getSeconds()
+    const minute = date.getMinutes() + second / 60
+    const hour = (date.getHours() % 12) + minute / 60
+
+    myChart.setOption({
+      animationDurationUpdate: 300,
+      series: [
+        { name: 'hour', animation: hour !== 0, data: [{ value: hour }] },
+        { name: 'minute', animation: minute !== 0, data: [{ value: minute }] },
+        { name: 'second', animation: second !== 0, data: [{ value: second }] }
+      ]
+    })
+  }, 1000)
 }
 
 // ========== 数据更新方法 ==========
@@ -509,18 +933,103 @@ const updateGpuUsageTable2 = (data) => {
 const updateGpuUsageChart = () => {
   const chart = charts.find(c => c === echarts.getInstanceByDom(gpuUsageChart.value))
   if (chart) {
+    const barWidth = 20
     chart.setOption({
       xAxis: { data: gpuUsageData.value.categories },
-      series: gpuUsageData.value.series.map(s => ({
-        name: s.name,
-        data: s.data,
-        itemStyle: { color: s.color }
-      }))
+      series: [
+        // --------------------- 申请 ---------------------
+        {
+          name: '申请',
+          type: 'bar',
+          barWidth: barWidth,
+          z: 19,
+          backgroundStyle: {
+            color: 'rgba(232, 245, 255, 0.8)'
+          },
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#006caf' },
+              { offset: 1, color: '#04f2ff' }
+            ])
+          },
+          data: gpuUsageData.value.data1,
+        },
+        {
+          name: '申请-顶圆',
+          type: 'pictorialBar',
+          silent: true,
+          symbolSize: [barWidth, 10],
+          symbolOffset: [-30, -6],
+          symbolPosition: 'end',
+          z: 22,
+          color: '#0df3ff',
+          data: gpuUsageData.value.data1,
+        },
+
+        // --------------------- 审核 ---------------------
+        {
+          name: '审核',
+          type: 'bar',
+          barWidth: barWidth,
+          z: 19,
+          backgroundStyle: {
+            color: 'rgba(232, 245, 255, 0.8)'
+          },
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#369d6f' },
+              { offset: 1, color: '#6ffd9e' }
+            ])
+          },
+          data: gpuUsageData.value.data2,
+        },
+        {
+          name: '审核-顶圆',
+          type: 'pictorialBar',
+          silent: true,
+          symbolSize: [barWidth, 10],
+          symbolOffset: [0, -6],
+          symbolPosition: 'end',
+          z: 22,
+          color: '#6ffd9e',
+          data: gpuUsageData.value.data2,
+        },
+
+        // --------------------- 运行 ---------------------
+        {
+          name: '运行',
+          type: 'bar',
+          barWidth: barWidth,
+          z: 19,
+          backgroundStyle: {
+            color: 'rgba(232, 245, 255, 0.8)'
+          },
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#FFC300' },
+              { offset: 1, color: '#FF8B0A' }
+            ])
+          },
+          data: gpuUsageData.value.data3,
+        },
+        {
+          name: '运行-顶圆',
+          type: 'pictorialBar',
+          silent: true,
+          symbolSize: [barWidth, 10],
+          symbolOffset: [30, -6],
+          symbolPosition: 'end',
+          z: 22,
+          color: '#ffbc5e',
+          data: gpuUsageData.value.data3,
+        }
+      ]
     })
   }
 }
 
 const updateGaugeCharts = () => {
+  const max = 5
   const gaugeData = [
     { ref: cpuChart.value, value: resourceAllocation.value.cpu.usageRate, name: 'CPU', color: '#5470c6' },
     { ref: memoryChart.value, value: resourceAllocation.value.memory.usageRate, name: '内存', color: '#91cc75' },
@@ -532,7 +1041,43 @@ const updateGaugeCharts = () => {
     const chart = charts.find(c => c === echarts.getInstanceByDom(ref))
     if (chart) {
       chart.setOption({
-        series: [{ data: [{ value, name }] }]
+        series: [
+          { data: [, , value / 100 * max] },
+          { data: [, , max] },
+          {},
+          {
+            data: [
+              {
+                value: (value / 100 * max) / 5
+              },
+              {},
+              {
+                value: 1.33 - (value / 100 * max) / 5
+              }
+            ]
+          },
+          {
+            label: {
+              formatter: function(params) {
+                return '{value|' + value + '%}\n{name|' + name + '}';
+              },
+              rich: {
+                value: {
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                  fontFamily: 'DIN Alternate Bold',
+                  color: '#333',
+                  lineHeight: 20
+                },
+                name: {
+                  fontSize: 12,
+                  color: '#666',
+                  lineHeight: 16
+                }
+              }
+            }
+          }
+        ]
       })
     }
   })
@@ -552,10 +1097,23 @@ const updateTrendCharts = () => {
       chart.setOption({
         xAxis: { data: data.times },
         series: [{
-          data: data.data, lineStyle: { color }, areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: color + '40' },
-              { offset: 1, color: color + '00' }
+          data: data.data,
+          lineStyle: {
+            width: 2,
+            color: new echarts.graphic.LinearGradient(0, 1, 0, 0, [{
+              offset: 0,
+              color: '#1981E1FF'
+            },
+            {
+              offset: 1,
+              color: '#F27336FF'
+            }
+          //   ])
+          // },
+          // areaStyle: {
+          //   color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          //     { offset: 0, color: color + '40' },
+          //     { offset: 1, color: color + '00' }
             ])
           }
         }]
@@ -597,6 +1155,7 @@ onMounted(() => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
 
+  initChart()
   initGpuUsageChart()
   initGaugeChart(cpuChart.value, resourceAllocation.value.cpu.usageRate, 'CPU', '#5470c6')
   initGaugeChart(memoryChart.value, resourceAllocation.value.memory.usageRate, '内存', '#91cc75')
@@ -614,6 +1173,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (timeTimer) clearInterval(timeTimer)
+  if (timer) clearInterval(timer)
   stopAutoRefresh()
   window.removeEventListener('resize', handleResize)
   charts.forEach(chart => chart.dispose())
@@ -697,20 +1257,32 @@ const handleResize = () => {
 
 /* 时间卡片 */
 .time-content {
-  padding: 8px 0;
+  /* padding: 8px 0; */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .date-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 8px;
   font-size: 13px;
-  color: #666;
+  color: #444444;
+}
+
+.date-time-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
 }
 
 .year {
-  color: #409eff;
+  color: #444444;
   font-weight: 500;
 }
 
@@ -727,16 +1299,25 @@ const handleResize = () => {
   font-family: 'Courier New', monospace;
 }
 
-.clock-icon {
+.clock-container {
+  width: 70px;
+  height: 70px;
+  margin-right: 28px;
+  border-radius: 100%;
+  background-color: #fff;
+}
+
+/* .clock-icon {
   font-size: 24px;
   color: #409eff;
-}
+} */
 
 /* 资源申请记录 */
 .resource-stats {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  margin-top: 20px;
 }
 
 .stat-item {
@@ -751,9 +1332,9 @@ const handleResize = () => {
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: #388DEF;
 }
 
 .stat-value .unit {
@@ -801,7 +1382,7 @@ const handleResize = () => {
 }
 
 .chart-container {
-  height: 200px;
+  height: 275px;
 }
 
 /* 资源分配统计 */
@@ -815,12 +1396,19 @@ const handleResize = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 376px;
+  height: 133px;
+  background-color: #F9F9F9;
+  padding: 16px;
+  border-radius: 8px;
 }
 
 .gauge-chart {
-  width: 100px;
-  height: 100px;
+  width: 103px;
+  height: 103px;
   flex-shrink: 0;
+  border: 1px solid #B2BFD9;
+  border-radius: 50%;
 }
 
 .allocation-info {
@@ -857,7 +1445,7 @@ const handleResize = () => {
 }
 
 .monitor-item {
-  background: #fafafa;
+  /* background: #fafafa; */
   padding: 8px;
   height: 191px;
   position: relative;
@@ -926,4 +1514,5 @@ const handleResize = () => {
   justify-content: space-between;
   padding-bottom: 16px;
 }
+
 </style>
