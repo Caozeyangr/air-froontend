@@ -425,8 +425,8 @@ const initGpuUsageChart = () => {
         },
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#006caf' },
-            { offset: 1, color: '#04f2ff' }
+            { offset: 0, color: '#008AFF' },
+            { offset: 1, color: '#3C6DCD' }
           ])
         },
         data: gpuUsageData.value.data1,
@@ -483,8 +483,8 @@ const initGpuUsageChart = () => {
         },
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#c97d2b' },
-            { offset: 1, color: '#ffbc5e' }
+            { offset: 0, color: '#FFC300' },
+            { offset: 1, color: '#FF8B0A' }
           ])
         },
         data: gpuUsageData.value.data3,
@@ -497,7 +497,7 @@ const initGpuUsageChart = () => {
         symbolOffset: [22, -4],
         symbolPosition: 'end',
         z: 22,
-        color: '#ffbc5e',
+        color: '#FFEB0D',
         data: gpuUsageData.value.data3,
       }
     ]
@@ -1348,6 +1348,7 @@ const handleResize = () => {
 .physical-stats {
   display: flex;
   justify-content: space-around;
+  margin-top: 20px;
 }
 
 .phys-item {
