@@ -1,7 +1,7 @@
 <template>
   <div class="mining-task-page">
     <div class="mining-task-top">
-      <div class="mining-task-left">
+      <div class="mining-task-left" :style="{ backgroundImage: `url(${miningTaskBg})`, backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }">
         任务列表
       </div>
       <div class="mining-task-right">
@@ -10,18 +10,20 @@
           <!-- 模型精度曲线 -->
           <div class="accuracy-curve-card card">
             <div class="card-title">模型精度曲线</div>
+            <div class="chart-content">
             <div class="legend">
               <span class="legend-item">
-                <i class="legend-icon" style="background: #5470c6;"></i>YOLOv8
+                <img :src="legendBlue" class="legend-icon" alt="YOLOv8">YOLOv8
               </span>
               <span class="legend-item">
-                <i class="legend-icon" style="background: #fac858;"></i>YOLOv8(改Neck)
+                <img :src="legendYellow" class="legend-icon" alt="YOLOv8(改Neck)">YOLOv8(改Neck)
               </span>
               <span class="legend-item">
-                <i class="legend-icon" style="background: #91cc75;"></i>YOLO-PM
+                <img :src="legendGreen" class="legend-icon" alt="YOLO-PM">YOLO-PM
               </span>
             </div>
             <div ref="accuracyChart" class="chart-container"></div>
+            </div>
           </div>
 
           <!-- 显卡资源使用率 -->
@@ -55,13 +57,13 @@
     <div class="mining-task-bottom">
       <div class="training-list-card card">
         <div class="card-title">训练列表</div>
-        <el-table :data="trainingListData" style="width: 100%" size="small">
+        <el-table :data="trainingListData" style="width: 100%" size="small" :row-class-name="tableRowClassName">
           <el-table-column prop="modelName" label="模型名称" min-width="220" />
           <el-table-column prop="modelType" label="模型" min-width="220" />
           <el-table-column prop="progress" label="进度" min-width="220" />
           <el-table-column prop="status" label="状态" min-width="220">
             <template #default="scope">
-              <el-tag :type="getStatusType(scope.row.status)">
+              <el-tag :class="getStatusClass(scope.row.status)" size="small">
                 {{ scope.row.status }}
               </el-tag>
             </template>
@@ -99,43 +101,38 @@ import InfoFilled from "@/assets/table/样本编辑.png"
 import recover from "@/assets/table/恢复.png"
 import pause from "@/assets/table/暂停.png"
 import Delete from "@/assets/table/删除.png"
+import miningTaskBg from "@/assets/miningTask/image.png"
+import legendBlue from "@/assets/miningTask/lan.png"
+import legendYellow from "@/assets/miningTask/huang.png"
+import legendGreen from "@/assets/miningTask/lv.png"
 let messenger = null;
 import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
 // ========== 模型精度曲线数据 ==========
-const accuracyData = ref({
-  xAxis: [0, 150, 300, 450, 600, 750, 900, 1050, 1200, 1350, 1500, 1750, 1900],
-  series: [
-    { name: 'YOLOv8', data: [5, 15, 28, 35, 42, 50, 58, 65, 72, 76, 80, 82, 85], color: '#5470c6' },
-    { name: 'YOLOv8(改Neck)', data: [8, 22, 35, 45, 52, 58, 62, 68, 74, 78, 81, 83, 86], color: '#fac858' },
-    { name: 'YOLO-PM', data: [3, 12, 25, 32, 40, 48, 55, 62, 70, 78, 82, 84, 87], color: '#91cc75' }
-  ]
-})
+const accuracyData = ref({})
 
 // ========== 显卡资源使用率数据 ==========
-const gpuUsageData = ref({
-  cpu: { value: 60, name: 'CPU' },
-  gpu: { value: 60, name: 'GPU' }
-})
+const gpuUsageData = ref({})
 
 // ========== 模型详情表格数据 ==========
-const modelDetailData = ref([
-  { modelName: '井盖识别', creator: '系统管理员', bestAccuracy: 90 },
-  { modelName: '车辆检测', creator: '张三', bestAccuracy: 88 },
-  { modelName: '行人识别', creator: '李四', bestAccuracy: 92 }
-])
+const modelDetailData = ref([])
 
 // ========== 训练列表数据 ==========
-const trainingListData = ref([
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '训练中', status: '成功', createTime: '2016-3-31', isPaused: false },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '挖掘中', status: '暂停', createTime: '2016-3-31', isPaused: true },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '完成', status: '失败', createTime: '2016-3-31', isPaused: false },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '训练中', status: '成功', createTime: '2016-3-31', isPaused: false },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '挖掘中', status: '暂停', createTime: '2016-3-31', isPaused: true },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '完成', status: '失败', createTime: '2016-3-31', isPaused: false },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '训练中', status: '成功', createTime: '2016-3-31', isPaused: false },
-  { modelName: '井盖识别', modelType: 'YOLO26', progress: '训练中', status: '成功', createTime: '2016-3-31', isPaused: false }
-])
+const trainingListData = ref([])
+
+// 从JSON文件加载数据
+const loadData = async () => {
+  try {
+    const response = await fetch('/MiningTask.json')
+    const data = await response.json()
+    accuracyData.value = data.accuracyData
+    gpuUsageData.value = data.gpuUsageData
+    modelDetailData.value = data.modelDetailData
+    trainingListData.value = data.trainingListData
+  } catch (error) {
+    console.error('Failed to load data:', error)
+  }
+}
 
 // 状态标签类型映射
 const getStatusType = (status) => {
@@ -145,6 +142,23 @@ const getStatusType = (status) => {
     '失败': 'danger'
   }
   return typeMap[status] || 'info'
+}
+
+const tableRowClassName = ({ rowIndex }) => {
+  if (rowIndex % 2 === 0) {
+    return 'even-row'
+  } else {
+    return 'odd-row'
+  }
+}
+
+const getStatusClass = (status) => {
+  const classMap = {
+    '成功': 'status-success',
+    '暂停': 'status-pause',
+    '失败': 'status-fail'
+  }
+  return classMap[status] || ''
 }
 
 // ========== ECharts 实例 ==========
@@ -169,14 +183,28 @@ const initAccuracyChart = () => {
       type: 'category',
       data: accuracyData.value.xAxis,
       axisLine: { lineStyle: { color: '#ccc' } },
-      axisLabel: { color: '#666', fontSize: 10 }
+      axisLabel: { 
+        color: '#222222', 
+        fontSize: 12,
+        fontFamily: 'PingFangSC, PingFang SC',
+        fontWeight: 'normal',
+        lineHeight: 17,
+        rotate: 45
+      }
     },
     yAxis: {
       type: 'value',
       max: 100,
+      interval: 10,
       axisLine: { show: false },
-      splitLine: { lineStyle: { color: '#eee', type: 'dashed' } },
-      axisLabel: { color: '#666', fontSize: 10 }
+      splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
+      axisLabel: { 
+        color: '#666666', 
+        fontSize: 12,
+        fontFamily: 'PingFangSC, PingFang SC',
+        fontWeight: 'normal',
+        lineHeight: 23
+      }
     },
     series: accuracyData.value.series.map(s => ({
       name: s.name,
@@ -193,41 +221,153 @@ const initAccuracyChart = () => {
 
 const initGaugeChart = (chartRef, data) => {
   const chart = echarts.init(chartRef)
+  
+  let colorSet = {
+    colorBlue: {
+      bg: "#D1E8FF",
+      bar: new echarts.graphic.LinearGradient(
+        0, 1, 0, 0,
+        [
+          { offset: 0, color: '#A5D4FF' },
+          { offset: 0.4, color: '#5BACFF' },
+          { offset: 0.8, color: '#157DFF' }
+        ]
+      ),
+      pin: "#B7D3FE",
+      innerCircle: "#3899FF",
+      middleCircle: "#8DC3FD",
+      outerCircle: "#E3EDF8"
+    }
+  };
+  
+  let baseColor = colorSet.colorBlue;
+  let score = data.value;
+  
   const option = {
-    series: [{
-      type: 'gauge',
-      startAngle: 90,
-      endAngle: -270,
-      radius: '85%',
-      pointer: { show: false },
-      progress: {
-        show: true,
-        overlap: false,
-        roundCap: true,
-        clip: false,
-        itemStyle: { color: '#409eff' }
-      },
-      axisLine: {
-        lineStyle: { width: 10, color: [[1, '#e6f2ff']] }
-      },
+    title: {
+      text: score + '%',
+      left: 'center',
+      top: "40%",
+      triggerEvent: true,
+      textStyle: {
+        fontSize: 18,
+        fontFamily: "Microsoft YaHei",
+        color: '#fff',
+      }
+    },
+    tooltip: { show: false },
+    angleAxis: {
+      show: false,
+      max: (100 * 360) / 265,
+      type: "value",
+      startAngle: 223,
       splitLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { show: false },
-      data: [{
-        value: data.value,
-        name: data.name,
-        title: { show: false },
-        detail: {
-          valueAnimation: true,
-          offsetCenter: ['0%', '0%'],
-          fontSize: 20,
+    },
+    barMaxWidth: 4,
+    radiusAxis: { show: false, type: "category", z: 10 },
+    polar: { radius: "145%" },
+    series: [
+      {
+        type: "bar",
+        data: [{ value: score, itemStyle: { color: baseColor.bar } }],
+        barGap: "-100%",
+        coordinateSystem: "polar",
+        roundCap: false,
+        z: 2,
+        animationDuration: 1500,
+      },
+      {
+        name: '刻度数字',
+        type: 'gauge',
+        radius: '122%',
+        min: 0,
+        max: 100,
+        splitNumber: 10,
+        startAngle: 225,
+        endAngle: -45,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: {
+          show: true,
+          fontSize: 6,
           fontWeight: 'bold',
-          formatter: '{value}%',
-          color: '#409eff'
-        }
-      }]
-    }]
-  }
+          color: '#D4D7FA',
+          distance: 0,
+          formatter: function (value) {
+            return value;
+          }
+        },
+        detail: { show: false },
+        pointer: { show: false }
+      },
+      {
+        name: '内部蓝色刻度',
+        type: 'gauge',
+        radius: '120%',
+        min: 0,
+        max: 100,
+        splitNumber: 10,
+        startAngle: 225,
+        endAngle: -45,
+        axisLine: { show: false },
+        axisTick: {
+          show: true,
+          splitNumber: 10,
+          lineStyle: { color: baseColor.pin, width: 1 },
+          length: -5
+        },
+        axisLabel: { show: false },
+        splitLine: {
+          show: true,
+          length: -10,
+          lineStyle: { width: 2, color: baseColor.pin }
+        },
+        detail: { show: false },
+        pointer: { show: false }
+      },
+      {
+        type: 'pie',
+        radius: '65%',
+        center: ['50%', '50%'],
+        silent: true,
+        z: 0,
+        itemStyle: {
+          color: baseColor.outerCircle,
+          borderWidth: 0
+        },
+        data: [100],
+        label: { show: false }
+      },
+      {
+        type: 'pie',
+        radius: '60%',
+        center: ['50%', '50%'],
+        silent: true,
+        z: 1,
+        itemStyle: {
+          color: baseColor.middleCircle,
+          borderWidth: 0
+        },
+        data: [100],
+        label: { show: false }
+      },
+      {
+        type: 'pie',
+        radius: '55%',
+        center: ['50%', '50%'],
+        silent: true,
+        z: 2,
+        itemStyle: {
+          color: baseColor.innerCircle,
+          borderWidth: 0
+        },
+        data: [100],
+        label: { show: false }
+      }
+    ]
+  };
+  
   chart.setOption(option)
   charts.push(chart)
 }
@@ -252,11 +392,24 @@ const updateGpuUsageData = (data) => {
   gpuUsageData.value = { ...gpuUsageData.value, ...data }
   const cpuChart = charts.find(c => c === echarts.getInstanceByDom(cpuGaugeChart.value))
   const gpuChart = charts.find(c => c === echarts.getInstanceByDom(gpuGaugeChart.value))
+  
   if (cpuChart) {
-    cpuChart.setOption({ series: [{ data: [{ value: gpuUsageData.value.cpu.value }] }] })
+    cpuChart.setOption({
+      title: { text: gpuUsageData.value.cpu.value + '%' },
+      series: [
+        { data: [{ value: gpuUsageData.value.cpu.value }] },
+        {}, {}, {}, {}, {}
+      ]
+    })
   }
   if (gpuChart) {
-    gpuChart.setOption({ series: [{ data: [{ value: gpuUsageData.value.gpu.value }] }] })
+    gpuChart.setOption({
+      title: { text: gpuUsageData.value.gpu.value + '%' },
+      series: [
+        { data: [{ value: gpuUsageData.value.gpu.value }] },
+        {}, {}, {}, {}, {}
+      ]
+    })
   }
 }
 
@@ -374,7 +527,10 @@ const handleRecover = (row) => {
 // })
 
 // ========== 生命周期 ==========
-onMounted(() => {
+onMounted(async () => {
+  // 加载数据
+  await loadData()
+  
   initAccuracyChart()
   initGaugeChart(cpuGaugeChart.value, gpuUsageData.value.cpu)
   initGaugeChart(gpuGaugeChart.value, gpuUsageData.value.gpu)
@@ -477,9 +633,13 @@ const handleResize = () => {
 }
 
 .card-title {
-  font-size: 14px;
+  font-family: PingFangSC, PingFang SC;
   font-weight: 600;
-  color: #333;
+  font-size: 18px;
+  color: #222222;
+  line-height: 25px;
+  text-align: left;
+  font-style: normal;
   margin-bottom: 12px;
   padding-left: 8px;
   border-left: 3px solid #409eff;
@@ -493,8 +653,14 @@ const handleResize = () => {
 .legend {
   display: flex;
   gap: 16px;
-  margin-bottom: 12px;
+  /* margin-bottom: 8px; */
   font-size: 12px;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  color: #666666;
+  line-height: 17px;
+  font-style: normal;
+  justify-content: center;
 }
 
 .legend-item {
@@ -504,15 +670,26 @@ const handleResize = () => {
   color: #666;
 }
 
+/* 原来的横线图例样式，现在使用图片 */
+/*
 .legend-icon {
   display: inline-block;
   width: 20px;
   height: 3px;
   border-radius: 2px;
 }
+*/
+
+/* 图片图例样式 */
+.legend-icon {
+  display: inline-block;
+  width: 20px;
+  height: 16px;
+  object-fit: contain;
+}
 
 .chart-container {
-  height: 220px;
+  height: 280px;
 }
 
 /* 显卡资源使用率 */
@@ -534,12 +711,12 @@ const handleResize = () => {
 }
 
 .gauge-chart {
-  width: 120px;
-  height: 120px;
+  width: 150px;
+  height:120px;
 }
 
 .gauge-label {
-  margin-top: 8px;
+  /* margin-top: 8px; */
   font-size: 14px;
   color: #333;
   font-weight: 500;
@@ -585,18 +762,91 @@ const handleResize = () => {
 }
 
 :deep(.el-table th) {
-  background: #f5f7fa;
-  color: #666;
-  font-weight: 500;
+  background: #F2F2F2 !important;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 600;
+  font-size: 14px;
+  color: #222222;
+  line-height: 41px;
+  text-align: left;
+  font-style: normal;
   height: 40px;
 }
 
 :deep(.el-table td) {
-  color: #333;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 14px;
+  color: #222222 !important;
+  line-height: 41px;
+  text-align: left;
+  font-style: normal;
+}
+
+:deep(.el-table .even-row) {
+  background-color: #FFFFFF;
+}
+
+:deep(.el-table .odd-row) {
+  background-color: #FAFAFA;
+}
+
+/* 状态标签样式 */
+:deep(.status-success) {
+  width: 48px !important;
+  height: 22px !important;
+  background: #F7FFFD !important;
+  border-radius: 14px !important;
+  border: 1px solid #A4E5D6 !important;
+  font-family: PingFangSC, PingFang SC !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  color: #33BB9A !important;
+  line-height: 20px !important;
+  font-style: normal !important;
+  padding: 0 8px !important;
+}
+
+:deep(.status-pause) {
+  width: 48px !important;
+  height: 22px !important;
+  background: #FFFBE3 !important;
+  border-radius: 11px !important;
+  border: 1px solid #FFCD6F !important;
+  font-family: PingFangSC, PingFang SC !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  color: #FFAB11 !important;
+  line-height: 20px !important;
+  font-style: normal !important;
+  padding: 0 8px !important;
+}
+
+:deep(.status-fail) {
+  width: 48px !important;
+  height: 22px !important;
+  background: #FFF8F7 !important;
+  border-radius: 11px !important;
+  border: 1px solid #FFA59A !important;
+  font-family: PingFangSC, PingFang SC !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  color: #FF2929 !important;
+  line-height: 20px !important;
+  font-style: normal !important;
+  padding: 0 8px !important;
 }
 
 .accuracy-curve-card {
   width: 424px;
   height: 394px;
+}
+
+.chart-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 43px;
 }
 </style>

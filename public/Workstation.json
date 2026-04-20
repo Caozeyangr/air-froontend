@@ -1,0 +1,82 @@
+{
+  "resourceApply": {
+    "totalApply": 46180,
+    "totalCpu": 724460,
+    "totalMemory": 2278150,
+    "totalStorage": 500,
+    "totalGpu": 87728
+  },
+  "physicalStatus": {
+    "total": 507,
+    "abnormal": 36,
+    "monitorStatus": 0
+  },
+  "resourceAllocation": {
+    "cpu": {
+      "total": 7820,
+      "allocated": 5364,
+      "usageRate": 23.66
+    },
+    "memory": {
+      "total": 89091.56,
+      "allocated": 55824.21,
+      "usageRate": 62.66
+    },
+    "storage": {
+      "total": 0,
+      "allocated": 0,
+      "usageRate": 54.33
+    },
+    "gpu": {
+      "total": 1462,
+      "allocated": 1238,
+      "usageRate": 87.99
+    }
+  },
+  "gpuUsageData": {
+    "categories": ["设备1", "设备2", "设备3"],
+    "data1": [120, 280, 100],
+    "data2": [180, 280, 200],
+    "data3": [240, 390, 280]
+  },
+  "gpuUsageTable1": [
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 }
+  ],
+  "gpuUsageTable2": [
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node1" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node2" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node3" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node4" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node5" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node6" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node7" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node8" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" }
+  ],
+  "trendData": {
+    "cpu": {
+      "times": ["10:00", "10:01", "10:02", "10:03", "10:04", "10:05", "10:06", "10:07", "10:08", "10:09"],
+      "data": [45, 48, 50, 47, 52, 88, 53, 56, 58, 60]
+    },
+    "memory": {
+      "times": ["10:00", "10:01", "10:02", "10:03", "10:04", "10:05", "10:06", "10:07", "10:08", "10:09"],
+      "data": [60, 62, 65, 63, 66, 68, 33, 72, 71, 73]
+    },
+    "storage": {
+      "times": ["10:00", "10:01", "10:02", "10:03", "10:04", "10:05", "10:06", "10:07", "10:08", "10:09"],
+      "data": [50, 52, 53, 51, 54, 55, 56, 58, 44, 59]
+    },
+    "gpu": {
+      "times": ["10:00", "10:01", "10:02", "10:03", "10:04", "10:05", "10:06", "10:07", "10:08", "10:09"],
+      "data": [80, 82, 83, 81, 33, 85, 86, 88, 87, 89]
+    }
+  }
+}

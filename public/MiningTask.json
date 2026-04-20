@@ -1,0 +1,29 @@
+{
+  "accuracyData": {
+    "xAxis": [0, 150, 300, 450, 600, 750, 900, 1050, 1200, 1350, 1500, 1750, 1900],
+    "series": [
+      { "name": "YOLOv8", "data": [5, 15, 28, 20, 42, 50, 58, 65, 72, 76, 80, 82, 85], "color": "#5470c6" },
+      { "name": "YOLOv8(改Neck)", "data": [8, 22, 31, 45, 52, 58, 62, 68, 74, 78, 81, 83, 86], "color": "#fac858" },
+      { "name": "YOLO-PM", "data": [3, 12, 25, 32, 40, 40, 55, 62, 70, 78, 82, 84, 87], "color": "#91cc75" }
+    ]
+  },
+  "gpuUsageData": {
+    "cpu": { "value": 60, "name": "CPU" },
+    "gpu": { "value": 60, "name": "GPU" }
+  },
+  "modelDetailData": [
+    { "modelName": "井盖识别", "creator": "系统管理员", "bestAccuracy": 90 },
+    { "modelName": "车辆检测", "creator": "张三", "bestAccuracy": 88 },
+    { "modelName": "行人识别", "creator": "李四", "bestAccuracy": 92 }
+  ],
+  "trainingListData": [
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "挖掘中", "status": "暂停", "createTime": "2016-3-31", "isPaused": true },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "完成", "status": "失败", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "挖掘中", "status": "暂停", "createTime": "2016-3-31", "isPaused": true },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "完成", "status": "失败", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false }
+  ]
+}

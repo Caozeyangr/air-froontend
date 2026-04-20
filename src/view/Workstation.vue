@@ -33,23 +33,23 @@
           <div class="resource-stats">
             <div class="stat-item">
               <div class="stat-label">累计申请资源</div>
-              <div class="stat-value">{{ resourceApply.totalApply }}<span class="unit">次</span></div>
+              <div class="stat-value">{{ resourceApply.totalApply || 0 }}<span class="unit">次</span></div>
             </div>
             <div class="stat-item">
               <div class="stat-label">累计申请CPU</div>
-              <div class="stat-value">{{ resourceApply.totalCpu }}<span class="unit">个</span></div>
+              <div class="stat-value">{{ resourceApply.totalCpu || 0 }}<span class="unit">个</span></div>
             </div>
             <div class="stat-item">
               <div class="stat-label">累计申请内存</div>
-              <div class="stat-value">{{ resourceApply.totalMemory }}<span class="unit">GB</span></div>
+              <div class="stat-value">{{ resourceApply.totalMemory || 0 }}<span class="unit">GB</span></div>
             </div>
             <div class="stat-item">
               <div class="stat-label">累计申请存储</div>
-              <div class="stat-value">{{ resourceApply.totalStorage }}<span class="unit">TB</span></div>
+              <div class="stat-value">{{ resourceApply.totalStorage || 0 }}<span class="unit">TB</span></div>
             </div>
             <div class="stat-item">
               <div class="stat-label">累计申请GPU</div>
-              <div class="stat-value">{{ resourceApply.totalGpu }}<span class="unit">个</span></div>
+              <div class="stat-value">{{ resourceApply.totalGpu || 0 }}<span class="unit">个</span></div>
             </div>
           </div>
         </div>
@@ -71,11 +71,11 @@
               <div class="allocation-info">
                 <div class="info-row">
                   <span class="info-label">CPU总量</span>
-                  <span class="info-value">{{ resourceAllocation.cpu.total }}<span class="unit">个</span></span>
+                  <span class="info-value">{{ resourceAllocation.cpu?.total || 0 }}<span class="unit">个</span></span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">CPU已分配</span>
-                  <span class="info-value">{{ resourceAllocation.cpu.allocated }}<span class="unit">个</span></span>
+                  <span class="info-value">{{ resourceAllocation.cpu?.allocated || 0 }}<span class="unit">个</span></span>
                 </div>
               </div>
             </div>
@@ -84,11 +84,11 @@
               <div class="allocation-info">
                 <div class="info-row">
                   <span class="info-label">内存总量</span>
-                  <span class="info-value">{{ resourceAllocation.memory.total }}<span class="unit">GB</span></span>
+                  <span class="info-value">{{ resourceAllocation.memory?.total || 0 }}<span class="unit">GB</span></span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">内存已分配</span>
-                  <span class="info-value">{{ resourceAllocation.memory.allocated }}<span class="unit">GB</span></span>
+                  <span class="info-value">{{ resourceAllocation.memory?.allocated || 0 }}<span class="unit">GB</span></span>
                 </div>
               </div>
             </div>
@@ -97,11 +97,11 @@
               <div class="allocation-info">
                 <div class="info-row">
                   <span class="info-label">存储总量</span>
-                  <span class="info-value">{{ resourceAllocation.storage.total }}<span class="unit">TB</span></span>
+                  <span class="info-value">{{ resourceAllocation.storage?.total || 0 }}<span class="unit">TB</span></span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">存储已分配</span>
-                  <span class="info-value">{{ resourceAllocation.storage.allocated }}<span class="unit">TB</span></span>
+                  <span class="info-value">{{ resourceAllocation.storage?.allocated || 0 }}<span class="unit">TB</span></span>
                 </div>
               </div>
             </div>
@@ -110,11 +110,11 @@
               <div class="allocation-info">
                 <div class="info-row">
                   <span class="info-label">GPU总量</span>
-                  <span class="info-value">{{ resourceAllocation.gpu.total }}<span class="unit">个</span></span>
+                  <span class="info-value">{{ resourceAllocation.gpu?.total || 0 }}<span class="unit">个</span></span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">GPU已分配</span>
-                  <span class="info-value">{{ resourceAllocation.gpu.allocated }}<span class="unit">个</span></span>
+                  <span class="info-value">{{ resourceAllocation.gpu?.allocated || 0 }}<span class="unit">个</span></span>
                 </div>
               </div>
             </div>
@@ -182,15 +182,15 @@
         <div class="physical-stats">
           <div class="phys-item">
             <div class="phys-label">集群物理机</div>
-            <div class="phys-value normal">{{ physicalStatus.total }}</div>
+            <div class="phys-value normal">{{ physicalStatus.total || 0 }}</div>
           </div>
           <div class="phys-item">
             <div class="phys-label">异常物理机</div>
-            <div class="phys-value warning">{{ physicalStatus.abnormal }}</div>
+            <div class="phys-value warning">{{ physicalStatus.abnormal || 0 }}</div>
           </div>
           <div class="phys-item">
             <div class="phys-label">集群监控状态</div>
-            <div class="phys-value normal">{{ physicalStatus.monitorStatus }}</div>
+            <div class="phys-value normal">{{ physicalStatus.monitorStatus || 0 }}</div>
           </div>
         </div>
       </div>
@@ -247,126 +247,67 @@ const updateTime = () => {
     month: now.getMonth() + 1,
     day: now.getDate(),
     weekDay: weekDays[now.getDay()],
-    time: now.toTimeString().slice(0, 8)
+    time: now.toTimeString().slice(0, 8).replace(/:/g, ' : ')
   }
 }
 
 // ========== 资源申请记录数据 ==========
-const resourceApply = ref({
-  totalApply: 46180,
-  totalCpu: 724460,
-  totalMemory: 2278150,
-  totalStorage: 500,
-  totalGpu: 87728
-})
+const resourceApply = ref({})
 
-// ========== 物理机状态数据 ==========
-const physicalStatus = ref({
-  total: 507,
-  abnormal: 36,
-  monitorStatus: 0
-})
-
-// ========== 资源分配统计数据 ==========
-const resourceAllocation = ref({
-  cpu: {
-    total: 7820,
-    allocated: 5364,
-    usageRate: 23.66
-  },
-  memory: {
-    total: 89091.56,
-    allocated: 55824.21,
-    usageRate: 62.66
-  },
-  storage: {
-    total: 0,
-    allocated: 0,
-    usageRate: 54.33
-  },
-  gpu: {
-    total: 1462,
-    allocated: 1238,
-    usageRate: 87.99
+// 从JSON文件加载数据
+const loadData = async () => {
+  try {
+    const response = await fetch('/Workstation.json')
+    const data = await response.json()
+    resourceApply.value = data.resourceApply
+    physicalStatus.value = data.physicalStatus
+    resourceAllocation.value = data.resourceAllocation
+    gpuUsageData.value = data.gpuUsageData
+    gpuUsageTable1.value = data.gpuUsageTable1
+    gpuUsageTable2.value = data.gpuUsageTable2
+    
+    // 加载折线图数据
+    if (data.trendData) {
+      cpuTrendData.value = data.trendData.cpu 
+      memoryTrendData.value = data.trendData.memory 
+      storageTrendData.value = data.trendData.storage 
+      gpuTrendData.value = data.trendData.gpu 
+    }
+  } catch (error) {
+    console.error('Failed to load data:', error)
   }
-})
-
-// ========== 设备GPU使用量数据（柱状图） ==========
-const gpuUsageData = ref({
-  categories: ['设备1', '设备2', '设备3'],
-  // series: [
-  //   { 
-  //     name: '申请', 
-  //     data: [120, 220, 150], 
-  //     color: '#5470c6',
-  //     topColor: '#008AFFFF',
-  //     bottomColor: '#3C6DCDFF',
-  //     topCircleColor: '#82F3FFFF'
-  //   },
-  //   { 
-  //     name: '审核', 
-  //     data: [180, 280, 200], 
-  //     color: '#91cc75',
-  //     topColor: '#67C23A',
-  //     bottomColor: '#4CAF50',
-  //     topCircleColor: '#B3E5FC'
-  //   },
-  //   { 
-  //     name: '运行', 
-  //     data: [240, 350, 280], 
-  //     color: '#fac858',
-  //     topColor: '#E6A23C',
-  //     bottomColor: '#F56C6C',
-  //     topCircleColor: '#FFD700'
-  //   }
-  // ]
-  data1: [120, 220, 150],
-  data2: [180, 280, 200],
-  data3: [240, 350, 280]
-})
-
-// ========== 资源使用率趋势数据 ==========
-const generateTrendData = () => {
-  const times = []
-  const data = []
-  const now = new Date()
-  for (let i = 0; i < 10; i++) {
-    const t = new Date(now.getTime() - (9 - i) * 60000)
-    times.push(t.toTimeString().slice(0, 5))
-    data.push(Math.floor(Math.random() * 40) + 40)
-  }
-  return { times, data }
 }
 
-const cpuTrendData = ref(generateTrendData())
-const memoryTrendData = ref(generateTrendData())
-const storageTrendData = ref(generateTrendData())
-const gpuTrendData = ref(generateTrendData())
+// ========== 物理机状态数据 ==========
+const physicalStatus = ref({})
+
+// ========== 资源分配统计数据 ==========
+const resourceAllocation = ref({})
+
+// ========== 设备GPU使用量数据（柱状图） ==========
+const gpuUsageData = ref({})
+
+// ========== 资源使用率趋势数据 ==========
+// const generateTrendData = () => {
+//   const times = []
+//   const data = []
+//   const now = new Date()
+//   for (let i = 0; i < 10; i++) {
+//     const t = new Date(now.getTime() - (9 - i) * 60000)
+//     times.push(t.toTimeString().slice(0, 5))
+//     data.push(Math.floor(Math.random() * 40) + 40)
+//   }
+//   return { times, data }
+// }
+
+const cpuTrendData = ref({})
+const memoryTrendData = ref({})
+const storageTrendData = ref({})
+const gpuTrendData = ref({})
 
 // ========== 表格数据 ==========
-const gpuUsageTable1 = ref([
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 },
-  { name: '张三', applyCount: 4, auditCount: 4, runCount: 4 }
-])
-
-const gpuUsageTable2 = ref([
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node1' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node2' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node3' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node4' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node5' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node6' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node7' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node8' },
-  { name: '张三', ip: '192.168.1.1', cpu: 32, gpu: '16G', memory: '64G', machineName: 'node9' }
-])
+const gpuUsageTable1 = ref([])
+const gpuUsageTable2 = ref([])
 
 // ========== ECharts 实例 ==========
 const gpuUsageChart = ref(null)
@@ -400,7 +341,12 @@ const initGpuUsageChart = () => {
       type: 'category',
       data: gpuUsageData.value.categories,
       axisLine: { lineStyle: { color: '#ccc' } },
-      axisLabel: { color: '#666' }
+      axisLabel: { 
+        color: '#222222',
+        fontSize: 14,
+        fontFamily: "PingFang SC",
+        fontWeight: 'normal'
+      }
     },
     yAxis: {
       type: 'value',
@@ -411,7 +357,12 @@ const initGpuUsageChart = () => {
       },
       axisLine: { show: false },
       splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
-      axisLabel: { color: '#666' }
+      axisLabel: { 
+        color: '#666666',
+        fontSize: 12,
+        fontFamily: "PingFang SC",
+        fontWeight: 'normal'
+      }
     },
     series: [
       // --------------------- 申请 ---------------------
@@ -425,8 +376,8 @@ const initGpuUsageChart = () => {
         },
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#008AFF' },
-            { offset: 1, color: '#3C6DCD' }
+            { offset: 0, color: '#FFC300' },
+            { offset: 1, color: '#FF8B0A' }
           ])
         },
         data: gpuUsageData.value.data1,
@@ -436,40 +387,11 @@ const initGpuUsageChart = () => {
         type: 'pictorialBar',
         silent: true,
         symbolSize: [barWidth, 8],
-        symbolOffset: [-22, -4],
+        symbolOffset: [-11, -4],
         symbolPosition: 'end',
         z: 22,
-        color: '#0df3ff',
+        color: '#FFEB0D',
         data: gpuUsageData.value.data1,
-      },
-
-      // --------------------- 审核 ---------------------
-      {
-        name: '审核',
-        type: 'bar',
-        barWidth: barWidth,
-        z: 19,
-        backgroundStyle: {
-          color: 'rgba(232, 245, 255, 0.8)'
-        },
-        itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#369d6f' },
-            { offset: 1, color: '#6ffd9e' }
-          ])
-        },
-        data: gpuUsageData.value.data2,
-      },
-      {
-        name: '审核-顶圆',
-        type: 'pictorialBar',
-        silent: true,
-        symbolSize: [barWidth, 8],
-        symbolOffset: [0, -4],
-        symbolPosition: 'end',
-        z: 22,
-        color: '#6ffd9e',
-        data: gpuUsageData.value.data2,
       },
 
       // --------------------- 运行 ---------------------
@@ -483,8 +405,8 @@ const initGpuUsageChart = () => {
         },
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#FFC300' },
-            { offset: 1, color: '#FF8B0A' }
+            { offset: 0, color: '#008AFF' },
+            { offset: 1, color: '#3C6DCD' }
           ])
         },
         data: gpuUsageData.value.data3,
@@ -494,10 +416,10 @@ const initGpuUsageChart = () => {
         type: 'pictorialBar',
         silent: true,
         symbolSize: [barWidth, 8],
-        symbolOffset: [22, -4],
+        symbolOffset: [11, -4],
         symbolPosition: 'end',
         z: 22,
-        color: '#FFEB0D',
+        color: '#0df3ff',
         data: gpuUsageData.value.data3,
       }
     ]
@@ -619,15 +541,18 @@ const initGaugeChart = (chartRef, value, name, color) => {
           },
           rich: {
             value: {
-              fontSize: 16,
-              fontWeight: 'bold',
+              fontSize: 15,
+              fontWeight: 800,
               fontFamily: 'DIN Alternate Bold',
-              color: '#333',
-              lineHeight: 20
+              color: '#222222',
+              lineHeight: 20,
+              letterSpacing: '-2px'
             },
             name: {
               fontSize: 12,
-              color: '#666',
+              color: '#999999',
+              fontFamily: "PingFang SC",
+              fontWeight: 'normal',
               lineHeight: 16
             }
           }
@@ -662,14 +587,24 @@ const initTrendChart = (chartRef, data, color) => {
       data: data.times,
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#999', fontSize: 10 }
+      axisLabel: { 
+        color: '#222222', 
+        fontSize: 12,
+        fontFamily: 'PingFang SC Medium',
+        fontWeight: 'normal'
+      }
     },
     yAxis: {
       type: 'value',
       max: 100,
       axisLine: { show: false },
       splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
-      axisLabel: { color: '#666', fontSize: 10 }
+      axisLabel: { 
+        color: '#666666', 
+        fontSize: 12,
+        fontFamily: 'PingFang SC Medium',
+        fontWeight: 'normal'
+      }
     },
     series: [{
       type: 'line',
@@ -913,11 +848,8 @@ const updateGpuUsageData = (data) => {
   updateGpuUsageChart()
 }
 
-const updateTrendData = () => {
-  cpuTrendData.value = generateTrendData()
-  memoryTrendData.value = generateTrendData()
-  storageTrendData.value = generateTrendData()
-  gpuTrendData.value = generateTrendData()
+const updateTrendData = async () => {
+  await loadData()
   updateTrendCharts()
 }
 
@@ -948,8 +880,8 @@ const updateGpuUsageChart = () => {
           },
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#006caf' },
-              { offset: 1, color: '#04f2ff' }
+              { offset: 0, color: '#FFC300' },
+              { offset: 1, color: '#FF8B0A' }
             ])
           },
           data: gpuUsageData.value.data1,
@@ -959,40 +891,11 @@ const updateGpuUsageChart = () => {
           type: 'pictorialBar',
           silent: true,
           symbolSize: [barWidth, 10],
-          symbolOffset: [-30, -6],
+          symbolOffset: [-15, -6],
           symbolPosition: 'end',
           z: 22,
-          color: '#0df3ff',
+          color: '#FFEB0D',
           data: gpuUsageData.value.data1,
-        },
-
-        // --------------------- 审核 ---------------------
-        {
-          name: '审核',
-          type: 'bar',
-          barWidth: barWidth,
-          z: 19,
-          backgroundStyle: {
-            color: 'rgba(232, 245, 255, 0.8)'
-          },
-          itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#369d6f' },
-              { offset: 1, color: '#6ffd9e' }
-            ])
-          },
-          data: gpuUsageData.value.data2,
-        },
-        {
-          name: '审核-顶圆',
-          type: 'pictorialBar',
-          silent: true,
-          symbolSize: [barWidth, 10],
-          symbolOffset: [0, -6],
-          symbolPosition: 'end',
-          z: 22,
-          color: '#6ffd9e',
-          data: gpuUsageData.value.data2,
         },
 
         // --------------------- 运行 ---------------------
@@ -1006,8 +909,8 @@ const updateGpuUsageChart = () => {
           },
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#FFC300' },
-              { offset: 1, color: '#FF8B0A' }
+              { offset: 0, color: '#006caf' },
+              { offset: 1, color: '#04f2ff' }
             ])
           },
           data: gpuUsageData.value.data3,
@@ -1017,10 +920,10 @@ const updateGpuUsageChart = () => {
           type: 'pictorialBar',
           silent: true,
           symbolSize: [barWidth, 10],
-          symbolOffset: [30, -6],
+          symbolOffset: [15, -6],
           symbolPosition: 'end',
           z: 22,
-          color: '#ffbc5e',
+          color: '#0df3ff',
           data: gpuUsageData.value.data3,
         }
       ]
@@ -1031,10 +934,10 @@ const updateGpuUsageChart = () => {
 const updateGaugeCharts = () => {
   const max = 5
   const gaugeData = [
-    { ref: cpuChart.value, value: resourceAllocation.value.cpu.usageRate, name: 'CPU', color: '#5470c6' },
-    { ref: memoryChart.value, value: resourceAllocation.value.memory.usageRate, name: '内存', color: '#91cc75' },
-    { ref: storageChart.value, value: resourceAllocation.value.storage.usageRate, name: '存储', color: '#fac858' },
-    { ref: gpuChart.value, value: resourceAllocation.value.gpu.usageRate, name: 'GPU', color: '#ee6666' }
+    { ref: cpuChart.value, value: resourceAllocation.value.cpu?.usageRate || 0, name: 'CPU', color: '#5470c6' },
+    { ref: memoryChart.value, value: resourceAllocation.value.memory?.usageRate || 0, name: '内存', color: '#91cc75' },
+    { ref: storageChart.value, value: resourceAllocation.value.storage?.usageRate || 0, name: '存储', color: '#fac858' },
+    { ref: gpuChart.value, value: resourceAllocation.value.gpu?.usageRate || 0, name: 'GPU', color: '#ee6666' }
   ]
 
   gaugeData.forEach(({ ref, value, name }) => {
@@ -1125,8 +1028,8 @@ const updateTrendCharts = () => {
 // 自动刷新定时器
 let dataRefreshTimer = null
 const startAutoRefresh = (interval = 30000) => {
-  dataRefreshTimer = setInterval(() => {
-    updateTrendData()
+  dataRefreshTimer = setInterval(async () => {
+    await updateTrendData()
   }, interval)
 }
 
@@ -1151,16 +1054,19 @@ defineExpose({
 })
 
 // ========== 生命周期 ==========
-onMounted(() => {
+onMounted(async () => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
 
+  // 加载数据
+  await loadData()
+
   initChart()
   initGpuUsageChart()
-  initGaugeChart(cpuChart.value, resourceAllocation.value.cpu.usageRate, 'CPU', '#5470c6')
-  initGaugeChart(memoryChart.value, resourceAllocation.value.memory.usageRate, '内存', '#91cc75')
-  initGaugeChart(storageChart.value, resourceAllocation.value.storage.usageRate, '存储', '#fac858')
-  initGaugeChart(gpuChart.value, resourceAllocation.value.gpu.usageRate, 'GPU', '#ee6666')
+  initGaugeChart(cpuChart.value, resourceAllocation.value.cpu?.usageRate || 0, 'CPU', '#5470c6')
+  initGaugeChart(memoryChart.value, resourceAllocation.value.memory?.usageRate || 0, '内存', '#91cc75')
+  initGaugeChart(storageChart.value, resourceAllocation.value.storage?.usageRate || 0, '存储', '#fac858')
+  initGaugeChart(gpuChart.value, resourceAllocation.value.gpu?.usageRate || 0, 'GPU', '#ee6666')
 
   initTrendChart(cpuTrendChart.value, cpuTrendData.value, '#5470c6')
   initTrendChart(memoryTrendChart.value, memoryTrendData.value, '#91cc75')
@@ -1240,9 +1146,11 @@ const handleResize = () => {
 }
 
 .card-title {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
-  color: #333;
+  font-family: 'PingFang SC Medium', sans-serif;
+  font-style: normal;
+  color: #222222;
   margin-bottom: 12px;
   padding-left: 8px;
   border-left: 3px solid #409eff;
@@ -1283,7 +1191,32 @@ const handleResize = () => {
 
 .year {
   color: #444444;
-  font-weight: 500;
+  font-weight: 400;
+  font-size: 16px;
+  font-family: PingFangSC, "PingFang SC", sans-serif;
+  line-height: 22px;
+  text-align: center;
+  font-style: normal;
+}
+
+.month-day {
+  color: #444444;
+  font-size: 16px;
+  font-family: PingFangSC, "PingFang SC", sans-serif;
+  font-weight: 400;
+  line-height: 22px;
+  text-align: center;
+  font-style: normal;
+}
+
+.week {
+  color: #444444;
+  font-size: 16px;
+  font-family: PingFangSC, "PingFang SC", sans-serif;
+  font-weight: 400;
+  line-height: 22px;
+  text-align: center;
+  font-style: normal;
 }
 
 .time-row {
@@ -1293,10 +1226,10 @@ const handleResize = () => {
 }
 
 .time {
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 36px;
+  font-weight: normal;
   color: #409eff;
-  font-family: 'Courier New', monospace;
+  font-family: 'PingFang SC Medium', sans-serif;
 }
 
 .clock-container {
@@ -1333,8 +1266,9 @@ const handleResize = () => {
 
 .stat-value {
   font-size: 24px;
-  font-weight: 600;
+  font-weight: normal;
   color: #388DEF;
+  font-family: 'PingFang SC Medium', sans-serif;
 }
 
 .stat-value .unit {
@@ -1363,11 +1297,12 @@ const handleResize = () => {
 
 .phys-value {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: normal;
+  font-family: 'PingFang SC Medium', sans-serif;
 }
 
 .phys-value.normal {
-  color: #67c23a;
+  color: #388DEF;
 }
 
 .phys-value.warning {
@@ -1419,17 +1354,24 @@ const handleResize = () => {
 .info-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 8px;
   font-size: 13px;
 }
 
 .info-label {
-  color: #666;
+  color: #999999;
+  font-size: 14px;
+  font-family: "PingFang SC", sans-serif;
+  font-weight: normal;
 }
 
 .info-value {
-  color: #333;
-  font-weight: 500;
+  color: #222222;
+  font-size: 24px;
+  font-weight: 800;
+  font-family: 'DIN Alternate Bold', sans-serif;
+  letter-spacing: -1px;
 }
 
 .info-value .unit {
@@ -1453,8 +1395,9 @@ const handleResize = () => {
 }
 
 .monitor-title {
-  font-size: 12px;
-  color: #666;
+  font-size: 14px;
+  font-family: 'PingFang SC Medium', sans-serif;
+  color: #444444;
   margin-bottom: 4px;
   position: absolute;
   top: 5px;
@@ -1484,16 +1427,21 @@ const handleResize = () => {
 }
 
 .custom-table th {
-  background: #f5f7fa;
-  color: #666;
-  font-weight: 500;
+  background: #F0F0F0;
+  color: #222222;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'PingFang SC Medium', sans-serif;
   padding: 10px;
   text-align: left;
   border-bottom: 1px solid #e4e7ed;
 }
 
 .custom-table td {
-  color: #333;
+  color: #222222;
+  font-size: 12px;
+  font-family: "PingFang SC", sans-serif;
+  font-weight: normal;
   padding: 10px;
   border-bottom: 1px solid #ebeef5;
 }

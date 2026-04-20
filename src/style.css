@@ -57,6 +57,19 @@ html, body {
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'PingFang SC Medium';
+  src: url('@/assets/fonts/PingFang-SC-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'DIN Alternate Bold';
+  src: url('@/assets/fonts/DINAlternate-bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+
 body {
   font-family: 'PingFang SC', sans-serif;
 }
