@@ -34,7 +34,7 @@ const router = createRouter({
       meta: { requiresAuth: true } // 工作站需要认证
     },
     {
-      path: '/mining-task',
+      path: '/miningtask',
       name: 'MiningTask',
       component: MiningTask,
       meta: { requiresAuth: true } // 任务管理需要认证

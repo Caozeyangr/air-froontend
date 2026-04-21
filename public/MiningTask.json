@@ -24,6 +24,13 @@
     { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "挖掘中", "status": "暂停", "createTime": "2016-3-31", "isPaused": true },
     { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "完成", "status": "失败", "createTime": "2016-3-31", "isPaused": false },
     { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
+    { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false },
     { "modelName": "井盖识别", "modelType": "YOLO26", "progress": "训练中", "status": "成功", "createTime": "2016-3-31", "isPaused": false }
   ]
 }

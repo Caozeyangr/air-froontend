@@ -48,6 +48,11 @@
     { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
     { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
     { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
+    { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 },
     { "name": "张三", "applyCount": 4, "auditCount": 4, "runCount": 4 }
   ],
   "gpuUsageTable2": [
@@ -59,6 +64,15 @@
     { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node6" },
     { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node7" },
     { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node8" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
+    { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" },
     { "name": "张三", "ip": "192.168.1.1", "cpu": 32, "gpu": "16G", "memory": "64G", "machineName": "node9" }
   ],
   "trendData": {
