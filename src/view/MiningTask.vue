@@ -136,6 +136,7 @@ const getStatusType = (status) => {
   return typeMap[status] || 'info'
 }
 
+// 表格单双行样式
 const tableRowClassName = ({ rowIndex }) => {
   if (rowIndex % 2 === 0) {
     return 'even-row'
@@ -164,6 +165,7 @@ let charts = []
 const initAccuracyChart = () => {
   const chart = echarts.init(accuracyChart.value)
   const option = {
+    color: accuracyData.value.series.map(s => s.color),
     grid: {
       left: '3%',
       right: '4%',
@@ -181,6 +183,7 @@ const initAccuracyChart = () => {
         fontFamily: 'PingFang SC',
         fontWeight: 'normal'
       },
+      // 图例图标样式
       icon: 'rect',
       itemWidth: 10,
       itemHeight: 3
