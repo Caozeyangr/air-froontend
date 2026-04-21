@@ -67,14 +67,30 @@
           <el-table-column label="操作" min-width="200" fixed="right">
             <template #default="scope">
               <div class="operation-icons">
-                <img :src="Search" class="op-icon" @click="handleSearch(scope.row)" />
-                <img :src="Edit" class="op-icon" @click="handleEdit(scope.row)" />
-                <img :src="CopyDocument" class="op-icon" @click="handleCopy(scope.row)" />
-                <img :src="VideoPlay" class="op-icon" @click="handlePlay(scope.row)" />
-                <img :src="Document" class="op-icon" @click="handleDocument(scope.row)" />
-                <img :src="InfoFilled" class="op-icon" @click="handleInfo(scope.row)" />
-                <img :src="scope.row.isPaused ? pause : recover" class="op-icon" @click="handleRecover(scope.row)" />
-                <img :src="Delete" class="op-icon delete" @click="handleDelete(scope.row)" />
+                <el-tooltip content="详情" placement="top">
+                  <img :src="Search" class="op-icon" @click="handleSearch(scope.row)" />
+                </el-tooltip>
+                <el-tooltip content="日志" placement="top">
+                  <img :src="Edit" class="op-icon" @click="handleEdit(scope.row)" />
+                </el-tooltip>
+                <el-tooltip content="TensorBoard" placement="top">
+                  <img :src="CopyDocument" class="op-icon" @click="handleCopy(scope.row)" />
+                </el-tooltip>
+                <el-tooltip content="监控" placement="top">
+                  <img :src="VideoPlay" class="op-icon" @click="handlePlay(scope.row)" />
+                </el-tooltip>
+                <el-tooltip content="发布" placement="top">
+                  <img :src="Document" class="op-icon" @click="handleDocument(scope.row)" />
+                </el-tooltip>
+                <el-tooltip content="样本编辑" placement="top">
+                  <img :src="InfoFilled" class="op-icon" @click="handleInfo(scope.row)" />
+                </el-tooltip>
+                <el-tooltip :content="scope.row.isPaused ? '恢复' : '暂停'" placement="top">
+                  <img :src="scope.row.isPaused ? pause : recover" class="op-icon" @click="handleRecover(scope.row)" />
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <img :src="Delete" class="op-icon delete" @click="handleDelete(scope.row)" />
+                </el-tooltip>
               </div>
             </template>
           </el-table-column>
