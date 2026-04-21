@@ -1,8 +1,14 @@
 <template>
   <div class="mining-task-page">
     <div class="mining-task-top">
-      <div class="mining-task-left" :style="{ backgroundImage: `url(${miningTaskBg})`, backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }">
-        任务列表
+      <div class="mining-task-left">
+        <!-- 任务列表 -->
+        <div class="task-list-content">
+          <!-- 示例图片布局：四行七列 -->
+          <div v-for="i in 35" :key="i" class="task-image-item">
+            <img src="/src/assets/miningTask/屏幕截图 2026-04-21 111959.png" class="task-image" alt="任务图片"  />
+          </div>
+        </div>
       </div>
       <div class="mining-task-right">
         <!-- 上半部分：模型精度曲线 + 显卡资源使用率 -->
@@ -11,18 +17,7 @@
           <div class="accuracy-curve-card card">
             <div class="card-title">模型精度曲线</div>
             <div class="chart-content">
-            <div class="legend">
-              <span class="legend-item">
-                <img :src="legendBlue" class="legend-icon" alt="YOLOv8">YOLOv8
-              </span>
-              <span class="legend-item">
-                <img :src="legendYellow" class="legend-icon" alt="YOLOv8(改Neck)">YOLOv8(改Neck)
-              </span>
-              <span class="legend-item">
-                <img :src="legendGreen" class="legend-icon" alt="YOLO-PM">YOLO-PM
-              </span>
-            </div>
-            <div ref="accuracyChart" class="chart-container"></div>
+              <div ref="accuracyChart" class="chart-container"></div>
             </div>
           </div>
 
@@ -57,7 +52,7 @@
     <div class="mining-task-bottom">
       <div class="training-list-card card">
         <div class="card-title">训练列表</div>
-        <el-table :data="trainingListData" style="width: 100%" size="small" :row-class-name="tableRowClassName">
+        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small" :row-class-name="tableRowClassName">
           <el-table-column prop="modelName" label="模型名称" min-width="220" />
           <el-table-column prop="modelType" label="模型" min-width="220" />
           <el-table-column prop="progress" label="进度" min-width="220" />
@@ -102,9 +97,6 @@ import recover from "@/assets/table/恢复.png"
 import pause from "@/assets/table/暂停.png"
 import Delete from "@/assets/table/删除.png"
 import miningTaskBg from "@/assets/miningTask/image.png"
-import legendBlue from "@/assets/miningTask/lan.png"
-import legendYellow from "@/assets/miningTask/huang.png"
-import legendGreen from "@/assets/miningTask/lv.png"
 let messenger = null;
 import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
@@ -179,6 +171,20 @@ const initAccuracyChart = () => {
       top: '10%',
       containLabel: true
     },
+    legend: {
+      data: accuracyData.value.series.map(s => s.name),
+      left: 'center',
+      top: 0,
+      textStyle: {
+        fontSize: 12,
+        color: '#222222',
+        fontFamily: 'PingFang SC',
+        fontWeight: 'normal'
+      },
+      icon: 'rect',
+      itemWidth: 10,
+      itemHeight: 3
+    },
     xAxis: {
       type: 'category',
       data: accuracyData.value.xAxis,
@@ -225,14 +231,7 @@ const initGaugeChart = (chartRef, data) => {
   let colorSet = {
     colorBlue: {
       bg: "#D1E8FF",
-      bar: new echarts.graphic.LinearGradient(
-        0, 1, 0, 0,
-        [
-          { offset: 0, color: '#A5D4FF' },
-          { offset: 0.4, color: '#5BACFF' },
-          { offset: 0.8, color: '#157DFF' }
-        ]
-      ),
+      bar: '#438DFD',
       pin: "#B7D3FE",
       innerCircle: "#3899FF",
       middleCircle: "#8DC3FD",
@@ -578,6 +577,7 @@ const handleResize = () => {
   padding: 16px;
   background: #fff;
   border: 1px solid #ebeef5;
+  height: 100%;
 }
 
 .operation-icons {
@@ -611,8 +611,43 @@ const handleResize = () => {
   width: 979px;
   height: 100%;
   background: #fff;
-  padding: 16px;
+  padding: 12px ;
+  display: flex;
+  flex-direction: column;
 }
+
+.task-list-content {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.task-image-item {
+  width: 126.71px;
+  height: 126.71px;
+  aspect-ratio: 1;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.task-image-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.task-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 
 /* 右侧区域样式 */
 .mining-task-right {
@@ -670,22 +705,11 @@ const handleResize = () => {
   color: #666;
 }
 
-/* 原来的横线图例样式，现在使用图片 */
-/*
 .legend-icon {
   display: inline-block;
   width: 20px;
   height: 3px;
   border-radius: 2px;
-}
-*/
-
-/* 图片图例样式 */
-.legend-icon {
-  display: inline-block;
-  width: 20px;
-  height: 16px;
-  object-fit: contain;
 }
 
 .chart-container {

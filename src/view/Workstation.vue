@@ -127,51 +127,25 @@
         <!-- 设备GPU使用量表格1 -->
         <div class="table-card card">
           <div class="card-title">设备GPU使用量</div>
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>姓名</th>
-                <th>申请数量</th>
-                <th>审核数量</th>
-                <th>运行数量</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in gpuUsageTable1" :key="index">
-                <td>{{ item.name }}</td>
-                <td>{{ item.applyCount }}</td>
-                <td>{{ item.auditCount }}</td>
-                <td>{{ item.runCount }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <el-table :data="gpuUsageTable1" style="width: 100%; height: calc(100% - 40px)" size="small">
+            <el-table-column prop="name" label="姓名" min-width="80" />
+            <el-table-column prop="applyCount" label="申请数量" min-width="80" />
+            <el-table-column prop="auditCount" label="审核数量" min-width="80" />
+            <el-table-column prop="runCount" label="运行数量" min-width="80" />
+          </el-table>
         </div>
 
         <!-- 设备GPU使用量表格2 -->
         <div class="table-card2 card">
           <div class="card-title">设备GPU使用量</div>
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>姓名</th>
-                <th>IP</th>
-                <th>CPU</th>
-                <th>显卡</th>
-                <th>内存</th>
-                <th>机器名称</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in gpuUsageTable2" :key="index">
-                <td>{{ item.name }}</td>
-                <td>{{ item.ip }}</td>
-                <td>{{ item.cpu }}</td>
-                <td>{{ item.gpu }}</td>
-                <td>{{ item.memory }}</td>
-                <td>{{ item.machineName }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <el-table :data="gpuUsageTable2" style="width: 100%; height: calc(100% - 40px)" size="small">
+            <el-table-column prop="name" label="姓名" min-width="80" />
+            <el-table-column prop="ip" label="IP" min-width="100" />
+            <el-table-column prop="cpu" label="CPU" min-width="60" />
+            <el-table-column prop="gpu" label="显卡" min-width="100" />
+            <el-table-column prop="memory" label="内存" min-width="80" />
+            <el-table-column prop="machineName" label="机器名称" min-width="120" />
+          </el-table>
         </div>
       </div>
     </div>
@@ -541,11 +515,11 @@ const initGaugeChart = (chartRef, value, name, color) => {
           },
           rich: {
             value: {
-              fontSize: 15,
-              fontWeight: 800,
+              fontSize: 13,
+              fontWeight: 'bold',
               fontFamily: 'DIN Alternate Bold',
               color: '#222222',
-              lineHeight: 20,
+              lineHeight: 16,
               letterSpacing: '-2px'
             },
             name: {
@@ -966,11 +940,11 @@ const updateGaugeCharts = () => {
               },
               rich: {
                 value: {
-                  fontSize: 16,
+                  fontSize: 13,
                   fontWeight: 'bold',
                   fontFamily: 'DIN Alternate Bold',
                   color: '#333',
-                  lineHeight: 20
+                  lineHeight: 16
                 },
                 name: {
                   fontSize: 12,
@@ -1369,8 +1343,8 @@ const handleResize = () => {
 .info-value {
   color: #222222;
   font-size: 24px;
-  font-weight: 800;
-  font-family: 'DIN Alternate Bold', sans-serif;
+  font-weight: bold !important;
+  /* font-family: 'DIN Alternate Bold', sans-serif; */
   letter-spacing: -1px;
 }
 
@@ -1419,35 +1393,44 @@ const handleResize = () => {
   min-height: 300px;
 }
 
-/* 自定义表格样式 */
-.custom-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+/* el-table 样式 */
+.table-card :deep(.el-table),
+.table-card2 :deep(.el-table) {
+  --el-table-header-bg-color: #F0F0F0 !important;
+  --el-table-header-text-color: #222222 !important;
+  --el-table-row-hover-bg-color: #f5f7fa !important;
 }
 
-.custom-table th {
-  background: #F0F0F0;
-  color: #222222;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: 'PingFang SC Medium', sans-serif;
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #e4e7ed;
+.table-card :deep(.el-table th.el-table__cell),
+.table-card2 :deep(.el-table th.el-table__cell) {
+  font-family: 'PingFang SC Medium', sans-serif !important;
+  font-size: 14px !important;
+  color: #222222 !important;
+  line-height: 41px !important;
+  text-align: left !important;
+  font-style: normal !important;
+  background-color: #F0F0F0 !important;
 }
 
-.custom-table td {
-  color: #222222;
-  font-size: 12px;
-  font-family: "PingFang SC", sans-serif;
-  font-weight: normal;
-  padding: 10px;
-  border-bottom: 1px solid #ebeef5;
+.table-card :deep(.el-table td.el-table__cell),
+.table-card2 :deep(.el-table td.el-table__cell) {
+  font-family: 'PingFang SC', sans-serif !important;
+  font-size: 14px !important;
+  color: #222222 !important;
+  line-height: 41px !important;
+  text-align: left !important;
+  font-style: normal !important;
 }
 
-.custom-table tr:hover {
-  background: #f5f7fa;
+.table-card :deep(.el-table .cell),
+.table-card2 :deep(.el-table .cell) {
+  font-family: inherit !important;
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  text-align: inherit !important;
+  font-style: inherit !important;
 }
 
 .left-section {
