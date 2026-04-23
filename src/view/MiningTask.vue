@@ -6,7 +6,7 @@
         <div class="task-list-content">
           <!-- 示例图片布局：四行七列 -->
           <div v-for="i in 35" :key="i" class="task-image-item">
-            <img src="/src/assets/miningTask/屏幕截图 2026-04-21 111959.png" class="task-image" alt="任务图片"  />
+            <img src="/src/assets/miningTask/屏幕截图 2026-04-21 111959.png" class="task-image" alt="任务图片" />
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import request from '@/utils/request.js'
 import Search from "@/assets/table/详情.png"
 import Edit from "@/assets/table/日志.png"
 import CopyDocument from "@/assets/table/TensorBoard.png"
@@ -141,23 +141,13 @@ const trainingListData = ref([])
 const loadData = async () => {
   try {
     // 调用训练任务列表查询接口
-    const taskListResponse = await axios.post('/api/v1/sampleDetect/task/queryDetectTaskList', {}, {
-      headers: {
-        'Content-Type': 'application/json',
-        'API-TOKEN': getApiToken()
-      }
-    })
+    const taskListResponse = await request.post('/api/v1/sampleDetect/task/queryDetectTaskList', {})
 
     // 调用挖掘统计信息查询接口
-    const dashboardResponse = await axios.post('/api/v1/sampleDetect/task/detectTaskDashboard', {}, {
-      headers: {
-        'Content-Type': 'application/json',
-        'API-TOKEN': getApiToken()
-      }
-    })
-    const dashboardData = dashboardResponse.data
+    const dashboardResponse = await request.post('/api/v1/sampleDetect/task/detectTaskDashboard', {})
+    const dashboardData = dashboardResponse
 
-    const taskListData = taskListResponse.data
+    const taskListData = taskListResponse
     trainingListData.value = taskListData.data.records
 
     // 获取 sampleSetResultId（从挖掘列表第一条记录）
@@ -171,11 +161,7 @@ const loadData = async () => {
       const encodedTileId = encodeURIComponent(tile.tileId)
       const imageUrl = `/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
       console.log('发送样本瓦片请求:', imageUrl)
-      await axios.get(imageUrl, {
-        headers: {
-          'API-TOKEN': getApiToken()
-        }
-      })
+      await request.get(imageUrl)
     }
 
     // 映射数据到页面所需的结构
@@ -319,8 +305,8 @@ const initAccuracyChart = () => {
       type: 'category',
       data: accuracyData.value.xAxis.data,
       axisLine: { lineStyle: { color: '#ccc' } },
-      axisLabel: { 
-        color: '#222222', 
+      axisLabel: {
+        color: '#222222',
         fontSize: 12,
         fontFamily: 'PingFangSC, PingFang SC',
         fontWeight: 'normal',
@@ -334,8 +320,8 @@ const initAccuracyChart = () => {
       interval: 10,
       axisLine: { show: false },
       splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
-      axisLabel: { 
-        color: '#666666', 
+      axisLabel: {
+        color: '#666666',
         fontSize: 12,
         fontFamily: 'PingFangSC, PingFang SC',
         fontWeight: 'normal',
@@ -357,7 +343,7 @@ const initAccuracyChart = () => {
 
 const initGaugeChart = (chartRef, data) => {
   const chart = echarts.init(chartRef)
-  
+
   let colorSet = {
     colorBlue: {
       bg: "#D1E8FF",
@@ -368,10 +354,10 @@ const initGaugeChart = (chartRef, data) => {
       outerCircle: "#E3EDF8"
     }
   };
-  
+
   let baseColor = colorSet.colorBlue;
   let score = data.value;
-  
+
   const option = {
     title: {
       text: score + '%',
@@ -496,7 +482,7 @@ const initGaugeChart = (chartRef, data) => {
       }
     ]
   };
-  
+
   chart.setOption(option)
   charts.push(chart)
 }
@@ -521,7 +507,7 @@ const updateGpuUsageData = (data) => {
   gpuUsageData.value = { ...gpuUsageData.value, ...data }
   const cpuChart = charts.find(c => c === echarts.getInstanceByDom(cpuGaugeChart.value))
   const gpuChart = charts.find(c => c === echarts.getInstanceByDom(gpuGaugeChart.value))
-  
+
   if (cpuChart) {
     cpuChart.setOption({
       title: { text: gpuUsageData.value.cpu.value + '%' },
@@ -554,23 +540,17 @@ const updateTrainingListData = async () => {
       return
     }
     // 调用本地 mock 接口
-    const response = await axios.post('/api/v1/sampleDetect/task/queryDetectTaskList', {
+    const result = await request.post('/api/v1/sampleDetect/task/queryDetectTaskList', {
       "pager": {
         "pageSize": 2,
         "currentPage": 1
       },
       "total": 17,
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'API-TOKEN': token
-      }
     })
-    const result = response.data
     if (result.code !== 200) {
       console.warn('getDashboardStats 错误:', result.message || result.code || '')
       // 检查是否是登录权限错误
-      if (result?.message?.includes('需要登录权限') || response.status === 401) {
+      if (result?.message?.includes('需要登录权限')) {
         redirectToLogin('登录已过期，请重新登录')
       }
       return
@@ -595,7 +575,8 @@ const updateTrainingListData = async () => {
 
 const handleSearch = (row) => {
   console.log('查看详情', row)
-  messenger.send('IFRAME_BUTTON', { "key": "info", "taskId": 1 }, (res) => {
+  let data = { "key": "info", "taskId": 1 }
+  messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
     console.log(`父页面已响应切换: {"key":"info","taskId": 1}, res: ${res}`);
   });
 }
@@ -643,7 +624,7 @@ const handleDelete = (row) => {
 const handleRecover = (row) => {
   console.log('恢复/暂停', row)
   row.isPaused = !row.isPaused
-  
+
 }
 
 // 暴露方法给父组件
@@ -658,7 +639,7 @@ const handleRecover = (row) => {
 onMounted(async () => {
   // 加载数据
   await loadData()
-  
+
   initAccuracyChart()
   initGaugeChart(cpuGaugeChart.value, gpuUsageData.value.cpu)
   initGaugeChart(gpuGaugeChart.value, gpuUsageData.value.gpu)
@@ -740,7 +721,7 @@ const handleResize = () => {
   width: 979px;
   height: 100%;
   background: #fff;
-  padding: 12px ;
+  padding: 12px;
   display: flex;
   flex-direction: column;
 }
@@ -865,7 +846,7 @@ const handleResize = () => {
 
 .gauge-chart {
   width: 150px;
-  height:120px;
+  height: 120px;
 }
 
 .gauge-label {

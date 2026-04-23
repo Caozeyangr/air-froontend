@@ -207,7 +207,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import request from '@/utils/request.js'
 import timeCardBg from '../assets/workstation/背景-当前时间@2x.png'
 import resourceApplyBg from '../assets/workstation/背景-资源申请记录@2x.png'
 import physicalStatusBg from '../assets/workstation/背景-物理机状态@2x.png'
@@ -241,12 +241,7 @@ const resourceApply = ref({})
 const loadData = async () => {
   try {
     // 调用mock接口
-    const response = await axios.post('/api/v1/workspace/statisticWorkspace', {}, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    const result = response.data
+    const result = await request.post('/api/v1/workspace/statisticWorkspace', {})
     
     // 映射mock数据到页面所需的数据结构
     resourceApply.value = {
