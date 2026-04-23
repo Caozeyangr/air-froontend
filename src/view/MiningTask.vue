@@ -6,7 +6,7 @@
         <div class="task-list-content">
           <!-- 示例图片布局：四行七列 -->
           <div v-for="i in 35" :key="i" class="task-image-item">
-            <img src="/src/assets/miningTask/屏幕截图 2026-04-21 111959.png" class="task-image" alt="任务图片"  />
+            <img src="/src/assets/miningTask/屏幕截图 2026-04-21 111959.png" class="task-image" alt="任务图片" />
           </div>
         </div>
       </div>
@@ -52,7 +52,8 @@
     <div class="mining-task-bottom">
       <div class="training-list-card card">
         <div class="card-title">训练列表</div>
-        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small" :row-class-name="tableRowClassName">
+        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small"
+          :row-class-name="tableRowClassName">
           <el-table-column prop="modelName" label="模型名称" min-width="220" />
           <el-table-column prop="modelType" label="模型" min-width="220" />
           <el-table-column prop="progress" label="进度" min-width="220" />
@@ -208,8 +209,8 @@ const initAccuracyChart = () => {
       type: 'category',
       data: accuracyData.value.xAxis,
       axisLine: { lineStyle: { color: '#ccc' } },
-      axisLabel: { 
-        color: '#222222', 
+      axisLabel: {
+        color: '#222222',
         fontSize: 12,
         fontFamily: 'PingFangSC, PingFang SC',
         fontWeight: 'normal',
@@ -223,8 +224,8 @@ const initAccuracyChart = () => {
       interval: 10,
       axisLine: { show: false },
       splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
-      axisLabel: { 
-        color: '#666666', 
+      axisLabel: {
+        color: '#666666',
         fontSize: 12,
         fontFamily: 'PingFangSC, PingFang SC',
         fontWeight: 'normal',
@@ -246,7 +247,7 @@ const initAccuracyChart = () => {
 
 const initGaugeChart = (chartRef, data) => {
   const chart = echarts.init(chartRef)
-  
+
   let colorSet = {
     colorBlue: {
       bg: "#D1E8FF",
@@ -257,10 +258,10 @@ const initGaugeChart = (chartRef, data) => {
       outerCircle: "#E3EDF8"
     }
   };
-  
+
   let baseColor = colorSet.colorBlue;
   let score = data.value;
-  
+
   const option = {
     title: {
       text: score + '%',
@@ -385,7 +386,7 @@ const initGaugeChart = (chartRef, data) => {
       }
     ]
   };
-  
+
   chart.setOption(option)
   charts.push(chart)
 }
@@ -410,7 +411,7 @@ const updateGpuUsageData = (data) => {
   gpuUsageData.value = { ...gpuUsageData.value, ...data }
   const cpuChart = charts.find(c => c === echarts.getInstanceByDom(cpuGaugeChart.value))
   const gpuChart = charts.find(c => c === echarts.getInstanceByDom(gpuGaugeChart.value))
-  
+
   if (cpuChart) {
     cpuChart.setOption({
       title: { text: gpuUsageData.value.cpu.value + '%' },
@@ -485,7 +486,8 @@ const updateTrainingListData = async () => {
 
 const handleSearch = (row) => {
   console.log('查看详情', row)
-  messenger.send('IFRAME_BUTTON', { "key": "info", "taskId": 1 }, (res) => {
+  let data = { "key": "info", "taskId": 1 }
+  messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
     console.log(`父页面已响应切换: {"key":"info","taskId": 1}, res: ${res}`);
   });
 }
@@ -533,7 +535,7 @@ const handleDelete = (row) => {
 const handleRecover = (row) => {
   console.log('恢复/暂停', row)
   row.isPaused = !row.isPaused
-  
+
 }
 
 // 暴露方法给父组件
@@ -548,7 +550,7 @@ const handleRecover = (row) => {
 onMounted(async () => {
   // 加载数据
   await loadData()
-  
+
   initAccuracyChart()
   initGaugeChart(cpuGaugeChart.value, gpuUsageData.value.cpu)
   initGaugeChart(gpuGaugeChart.value, gpuUsageData.value.gpu)
@@ -630,7 +632,7 @@ const handleResize = () => {
   width: 979px;
   height: 100%;
   background: #fff;
-  padding: 12px ;
+  padding: 12px;
   display: flex;
   flex-direction: column;
 }
@@ -755,7 +757,7 @@ const handleResize = () => {
 
 .gauge-chart {
   width: 150px;
-  height:120px;
+  height: 120px;
 }
 
 .gauge-label {
