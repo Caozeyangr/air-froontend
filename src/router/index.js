@@ -4,8 +4,8 @@ import { applyTokenFromQuery } from '../utils/authToken.js'
 // 导入页面组件
 import Login from '../view/Login.vue'
 import Home from '../view/Home.vue'
-import MiningTask from '../view/MiningTask.vue'
 import Workstation from '../view/workstation.vue'
+import MiningTask from '../view/MiningTask.vue'
 
 // 创建路由实例
 const router = createRouter({

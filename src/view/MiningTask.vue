@@ -52,19 +52,26 @@
     <div class="mining-task-bottom">
       <div class="training-list-card card">
         <div class="card-title">训练列表</div>
-        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small"
-          :row-class-name="tableRowClassName">
-          <el-table-column prop="modelName" label="模型名称" min-width="220" />
-          <el-table-column prop="modelType" label="模型" min-width="220" />
-          <el-table-column prop="progress" label="进度" min-width="220" />
+        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small" :row-class-name="tableRowClassName">
+          <el-table-column prop="name" label="模型名称" min-width="220" />
+          <el-table-column prop="templateName" label="模型" min-width="220" />
+          <el-table-column prop="progress" label="进度" min-width="220">
+            <template #default="scope">
+              {{ getProgressText(scope.row.progress) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="状态" min-width="220">
             <template #default="scope">
               <el-tag :class="getStatusClass(scope.row.status)" size="small">
-                {{ scope.row.status }}
+                {{ getStatusText(scope.row.status) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="createTime" label="创建时间" min-width="220" />
+          <el-table-column prop="createTime" label="创建时间" min-width="220">
+            <template #default="scope">
+              {{ formatDate(scope.row.createTime) }}
+            </template>
+          </el-table-column>
           <el-table-column label="操作" min-width="200" fixed="right">
             <template #default="scope">
               <div class="operation-icons">
@@ -104,6 +111,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
+import axios from 'axios'
 import Search from "@/assets/table/详情.png"
 import Edit from "@/assets/table/日志.png"
 import CopyDocument from "@/assets/table/TensorBoard.png"
@@ -129,15 +137,79 @@ const modelDetailData = ref([])
 // ========== 训练列表数据 ==========
 const trainingListData = ref([])
 
-// 从JSON文件加载数据
+// 从mock接口加载数据
 const loadData = async () => {
   try {
-    const response = await fetch('/MiningTask.json')
-    const data = await response.json()
-    accuracyData.value = data.accuracyData
-    gpuUsageData.value = data.gpuUsageData
-    modelDetailData.value = data.modelDetailData
-    trainingListData.value = data.trainingListData
+    // 调用训练任务列表查询接口
+    const taskListResponse = await axios.post('/api/v1/sampleDetect/task/queryDetectTaskList', {}, {
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': getApiToken()
+      }
+    })
+
+    // 调用挖掘统计信息查询接口
+    const dashboardResponse = await axios.post('/api/v1/sampleDetect/task/detectTaskDashboard', {}, {
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': getApiToken()
+      }
+    })
+    const dashboardData = dashboardResponse.data
+
+    const taskListData = taskListResponse.data
+    trainingListData.value = taskListData.data.records
+
+    // 获取 sampleSetResultId（从挖掘列表第一条记录）
+    const sampleSetResultId = taskListData.data.records[0]?.sampleSetResultId
+
+    // 获取 sampleTileList（从挖掘统计信息）
+    const sampleTileList = dashboardData.data.sampleTileList || []
+
+    // 遍历 sampleTileList，发送图片请求
+    for (const tile of sampleTileList) {
+      const encodedTileId = encodeURIComponent(tile.tileId)
+      const imageUrl = `/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
+      console.log('发送样本瓦片请求:', imageUrl)
+      await axios.get(imageUrl, {
+        headers: {
+          'API-TOKEN': getApiToken()
+        }
+      })
+    }
+
+    // 映射数据到页面所需的结构
+    const accuracyMap = dashboardData.data.accuracyMap
+    const accuracyKeys = Object.keys(accuracyMap)
+    const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC']
+    
+    accuracyData.value = {
+      series: accuracyKeys.map((key, index) => ({
+        name: key,
+        data: accuracyMap[key].map(val => val * 100),
+        color: colors[index % colors.length]
+      })),
+      xAxis: {
+        data: [0, 150, 300, 450, 600, 750, 900, 1050]
+      }
+    }
+    
+    gpuUsageData.value = {
+      cpu: {
+        value: dashboardData.data.cpuUsage * 100
+      },
+      gpu: {
+        value: dashboardData.data.gpuUsage * 100
+      }
+    }
+    
+    modelDetailData.value = [
+      {
+        modelName: dashboardData.data.taskName,
+        creator: dashboardData.data.createUsername,
+        bestAccuracy: dashboardData.data.maxPrecision * 100
+      }
+    ]
   } catch (error) {
     console.error('Failed to load data:', error)
   }
@@ -153,6 +225,43 @@ const getStatusType = (status) => {
   return typeMap[status] || 'info'
 }
 
+// 状态码转文本
+const getStatusText = (status) => {
+  const statusMap = {
+    0: '运行',
+    1: '成功',
+    2: '失败',
+    3: '暂停'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 进度值转文本
+const getProgressText = (progress) => {
+  const progressMap = {
+    0: '创建完成',
+    1: '等待训练',
+    2: '训练创建中',
+    3: '训练中',
+    4: '等待挖掘',
+    5: '挖掘创建中',
+    6: '挖掘中',
+    7: '挖掘结果处理任务等待中',
+    8: '挖掘结果处理中'
+  }
+  return progressMap[progress] || '未知'
+}
+
+// 时间格式化函数
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${year}-${month}-${day}`
+}
+
 // 表格单双行样式
 const tableRowClassName = ({ rowIndex }) => {
   if (rowIndex % 2 === 0) {
@@ -164,9 +273,10 @@ const tableRowClassName = ({ rowIndex }) => {
 
 const getStatusClass = (status) => {
   const classMap = {
-    '成功': 'status-success',
-    '暂停': 'status-pause',
-    '失败': 'status-fail'
+    1: 'status-success',
+    3: 'status-pause',
+    2: 'status-fail',
+    0: 'status-running'
   }
   return classMap[status] || ''
 }
@@ -186,7 +296,7 @@ const initAccuracyChart = () => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '10%',
       top: '10%',
       containLabel: true
     },
@@ -207,7 +317,7 @@ const initAccuracyChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: accuracyData.value.xAxis,
+      data: accuracyData.value.xAxis.data,
       axisLine: { lineStyle: { color: '#ccc' } },
       axisLabel: {
         color: '#222222',
@@ -215,7 +325,7 @@ const initAccuracyChart = () => {
         fontFamily: 'PingFangSC, PingFang SC',
         fontWeight: 'normal',
         lineHeight: 17,
-        rotate: 45
+        // rotate: 45
       }
     },
     yAxis: {
@@ -443,23 +553,22 @@ const updateTrainingListData = async () => {
       redirectToLogin('请先登录')
       return
     }
-    const response = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/queryDetectTaskList', {
-      method: 'POST',
+    // 调用本地 mock 接口
+    const response = await axios.post('/api/v1/sampleDetect/task/queryDetectTaskList', {
+      "pager": {
+        "pageSize": 2,
+        "currentPage": 1
+      },
+      "total": 17,
+    }, {
       headers: {
         'Content-Type': 'application/json',
         'API-TOKEN': token
-      },
-      body: JSON.stringify({
-        "pager": {
-          "pageSize": 2,
-          "currentPage": 1
-        },
-        "total": 17,
-      })
+      }
     })
-    const result = await response.json()
-    if (!response.ok) {
-      console.warn('getDashboardStats HTTP 错误:', response.status, result?.message || result?.code || '')
+    const result = response.data
+    if (result.code !== 200) {
+      console.warn('getDashboardStats 错误:', result.message || result.code || '')
       // 检查是否是登录权限错误
       if (result?.message?.includes('需要登录权限') || response.status === 401) {
         redirectToLogin('登录已过期，请重新登录')
@@ -877,6 +986,21 @@ const handleResize = () => {
   font-weight: 400 !important;
   font-size: 14px !important;
   color: #FF2929 !important;
+  line-height: 20px !important;
+  font-style: normal !important;
+  padding: 0 8px !important;
+}
+
+:deep(.status-running) {
+  width: 48px !important;
+  height: 22px !important;
+  background: #F0F9FF !important;
+  border-radius: 11px !important;
+  border: 1px solid #91D5FF !important;
+  font-family: PingFangSC, PingFang SC !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  color: #1890FF !important;
   line-height: 20px !important;
   font-style: normal !important;
   padding: 0 8px !important;
