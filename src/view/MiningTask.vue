@@ -190,7 +190,7 @@ const loadData = async () => {
         color: colors[index % colors.length]
       })),
       xAxis: {
-        data: [0, 150, 300, 450, 600, 750, 900, 1050]
+        data: accuracyMap[accuracyKeys[0]].map((_, index) => index * 150)
       }
     }
     
