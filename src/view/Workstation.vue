@@ -142,8 +142,16 @@
             <el-table-column prop="name" label="姓名" min-width="80" />
             <el-table-column prop="ip" label="IP" min-width="100" />
             <el-table-column prop="cpu" label="CPU" min-width="60" />
-            <el-table-column prop="gpu" label="显卡" min-width="100" />
-            <el-table-column prop="memory" label="内存" min-width="80" />
+            <el-table-column prop="gpu" label="显卡" min-width="100">
+              <template #default="scope">
+                {{ scope.row.gpu }}<span class="unit">G</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="memory" label="内存" min-width="80">
+              <template #default="scope">
+                {{ scope.row.memory }}<span class="unit">G</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="machineName" label="机器名称" min-width="120" />
           </el-table>
         </div>
@@ -199,6 +207,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
+import axios from 'axios'
 import timeCardBg from '../assets/workstation/背景-当前时间@2x.png'
 import resourceApplyBg from '../assets/workstation/背景-资源申请记录@2x.png'
 import physicalStatusBg from '../assets/workstation/背景-物理机状态@2x.png'
@@ -228,25 +237,107 @@ const updateTime = () => {
 // ========== 资源申请记录数据 ==========
 const resourceApply = ref({})
 
-// 从JSON文件加载数据
+// 从mock接口加载数据
 const loadData = async () => {
   try {
-    const response = await fetch('/Workstation.json')
-    const data = await response.json()
-    resourceApply.value = data.resourceApply
-    physicalStatus.value = data.physicalStatus
-    resourceAllocation.value = data.resourceAllocation
-    gpuUsageData.value = data.gpuUsageData
-    gpuUsageTable1.value = data.gpuUsageTable1
-    gpuUsageTable2.value = data.gpuUsageTable2
+    // 调用mock接口
+    const response = await axios.post('/api/v1/workspace/statisticWorkspace', {}, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    const result = response.data
+    
+    // 映射mock数据到页面所需的数据结构
+    resourceApply.value = {
+      totalApply: result.data.totalCreation || 0,
+      totalCpu: result.data.totalRequestedCpu || 0,
+      totalMemory: result.data.totalRequestedMemory || 0,
+      totalStorage: Number(((result.data.totalRequestedDisk || 0) / 1024).toFixed(1)) || 0,   // TB换算
+      totalGpu: result.data.totalRequestedGpu || 0
+    }
+    
+    // 根据nodeMetrics计算物理机状态
+    const nodeMetrics = result.data.nodeMetrics || []
+    const totalNodes = nodeMetrics.length
+    const abnormalNodes = nodeMetrics.filter(node => !node.ready).length
+    
+    physicalStatus.value = {
+      total: totalNodes,
+      abnormal: abnormalNodes,
+      monitorStatus: abnormalNodes === 0 ? 0 : 1
+    }
+    
+    resourceAllocation.value = {
+      cpu: {
+        total: result.data.cpu || 0,
+        allocated: result.data.cpuUsage || 0,
+        usageRate: result.data.cpu > 0 ? Math.round((result.data.cpuUsage / result.data.cpu) * 100) : 0
+      },
+      memory: {
+        total: result.data.memory || 0,
+        allocated: result.data.memoryUsage || 0,
+        usageRate: result.data.memory > 0 ? Math.round((result.data.memoryUsage / result.data.memory) * 100) : 0
+      },
+      storage: {
+        // 换算TB 保留2位小数
+        total: Number(((result.data.disk || 0) / 1024).toFixed(2)) || 0,
+        allocated: Number(((result.data.diskUsage || 0) / 1024).toFixed(2)) || 0,
+        usageRate: result.data.disk > 0 ? Math.round((result.data.diskUsage / result.data.disk) * 100) : 0
+      },
+      gpu: {
+        total: result.data.gpu || 0,
+        allocated: result.data.gpuUsage || 0,
+        usageRate: result.data.gpu > 0 ? Math.round((result.data.gpuUsage / result.data.gpu) * 100) : 0
+      }
+    }
+    
+    // 映射workspaces数据到设备GPU使用量表格2
+    gpuUsageTable2.value = (result.data.workspaces || []).map(item => ({
+      name: item.userName,
+      ip: item.ip,
+      cpu: item.cpu,
+      gpu: item.gpu,
+      memory: item.memory,
+      machineName: item.containerId
+    }))
+    
+    // 从nodeMetrics提取设备GPU使用量数据
+    const categories = nodeMetrics.flatMap(node => node.accelerators.map(acc => acc.resourceName))
+    const requestedList = nodeMetrics.flatMap(node =>
+      node.accelerators.map(acc => acc.requested || 0)
+    )
+    const allocatableList = nodeMetrics.flatMap(node =>
+      node.accelerators.map(acc => acc.allocatable || 0)
+    )
+    gpuUsageData.value = {
+      categories,
+      data1: requestedList,
+      data3: allocatableList
+    }
+    // 从mock接口获取 gpuUsageTable1 和 trendData
+    gpuUsageTable1.value = result.data.gpuUsageTable1 || []
+    cpuTrendData.value = result.data.trendData?.cpu || {}
+    memoryTrendData.value = result.data.trendData?.memory || {}
+    storageTrendData.value = result.data.trendData?.storage || {}
+    gpuTrendData.value = result.data.trendData?.gpu || {}
+    
+    // const response = await fetch('/Workstation.json')
+    // const data = await response.json()
+    // resourceApply.value = data.resourceApply
+    // physicalStatus.value = data.physicalStatus
+    // resourceAllocation.value = data.resourceAllocation
+    // gpuUsageData.value = data.gpuUsageData
+    // gpuUsageTable1.value = data.gpuUsageTable1
+    // gpuUsageTable2.value = data.gpuUsageTable2
     
     // 加载折线图数据
-    if (data.trendData) {
-      cpuTrendData.value = data.trendData.cpu 
-      memoryTrendData.value = data.trendData.memory 
-      storageTrendData.value = data.trendData.storage 
-      gpuTrendData.value = data.trendData.gpu 
-    }
+    // if (data.trendData) {
+    //   cpuTrendData.value = data.trendData.cpu 
+    //   memoryTrendData.value = data.trendData.memory 
+    //   storageTrendData.value = data.trendData.storage 
+    //   gpuTrendData.value = data.trendData.gpu 
+    // }
   } catch (error) {
     console.error('Failed to load data:', error)
   }
