@@ -208,6 +208,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import request from '@/utils/request.js'
+
 import timeCardBg from '../assets/workstation/背景-当前时间@2x.png'
 import resourceApplyBg from '../assets/workstation/背景-资源申请记录@2x.png'
 import physicalStatusBg from '../assets/workstation/背景-物理机状态@2x.png'
@@ -248,7 +249,7 @@ const loadData = async () => {
       totalApply: result.data.totalCreation || 0,
       totalCpu: result.data.totalRequestedCpu || 0,
       totalMemory: result.data.totalRequestedMemory || 0,
-      totalStorage: Number(((result.data.totalRequestedDisk || 0) / 1024).toFixed(1)) || 0,   // TB换算
+      totalStorage: Math.round((result.data.totalRequestedDisk || 0) / 1024) || 0,   // TB换算
       totalGpu: result.data.totalRequestedGpu || 0
     }
     
@@ -263,7 +264,7 @@ const loadData = async () => {
       monitorStatus: abnormalNodes === 0 ? 0 : 1
     }
     
-    resourceAllocation.value = {
+  resourceAllocation.value = {
       cpu: {
         total: result.data.cpu || 0,
         allocated: result.data.cpuUsage || 0,
@@ -275,7 +276,7 @@ const loadData = async () => {
         usageRate: result.data.memory > 0 ? Math.round((result.data.memoryUsage / result.data.memory) * 100) : 0
       },
       storage: {
-        // 换算TB 保留2位小数
+        // GB换算TB 保留2位小数
         total: Number(((result.data.disk || 0) / 1024).toFixed(2)) || 0,
         allocated: Number(((result.data.diskUsage || 0) / 1024).toFixed(2)) || 0,
         usageRate: result.data.disk > 0 ? Math.round((result.data.diskUsage / result.data.disk) * 100) : 0
@@ -1483,7 +1484,7 @@ const handleResize = () => {
 .table-card :deep(.el-table),
 .table-card2 :deep(.el-table) {
   --el-table-header-bg-color: #F0F0F0 !important;
-  --el-table-header-text-color: #222222 !important;
+  --el-table-header-text-color: #444 !important;
   --el-table-row-hover-bg-color: #f5f7fa !important;
 }
 
@@ -1491,7 +1492,7 @@ const handleResize = () => {
 .table-card2 :deep(.el-table th.el-table__cell) {
   font-family: 'PingFang SC Medium', sans-serif !important;
   font-size: 14px !important;
-  color: #222222 !important;
+  color: #444 !important;
   line-height: 41px !important;
   text-align: left !important;
   font-style: normal !important;

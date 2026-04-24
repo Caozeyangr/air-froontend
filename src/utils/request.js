@@ -2,6 +2,7 @@ import axios from 'axios'
 import { getApiToken, redirectToLogin } from './authToken.js'
 
 const service = axios.create({
+  // baseURL: 'https://ib.cangling.cn:22002',
   baseURL: '',
   timeout: 30000
 })
@@ -12,7 +13,7 @@ service.interceptors.request.use(
     if (token) {
       config.headers['API-TOKEN'] = token
     }
-    config.headers['Content-Type'] = 'application/json'
+    config.headers['Content-Type'] = 'application/json' 
     return config
   },
   error => {

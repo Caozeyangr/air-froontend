@@ -206,14 +206,6 @@ Mock.mock('/api/v1/sampleDetect/task/detectTaskDashboard', 'post', {
         tileId: '18%129_GF1_PMS2_E1188_N49.0_20170508_L1A0002347380_Reg_013_009',
         title: '已采信'
       },
-      // {
-      //   tileId: '18%129_GF1_PMS2_E1188_N49.0_20170508_L1A0002347380_Reg_013_009',
-      //   title: '已采信'
-      // },
-      // {
-      //   tileId: '18%129_GF1_PMS2_E1188_N49.0_20170508_L1A0002347380_Reg_013_009',
-      //   title: '已采信'
-      // },
     ],
     accuracyMap: {
       '精度': [
@@ -222,6 +214,9 @@ Mock.mock('/api/v1/sampleDetect/task/detectTaskDashboard', 'post', {
         0.4,
         0.3,
         0.6,
+        0.8,
+        0.5,
+        0.9,
         0.8,
         0.5,
         0.9
@@ -234,6 +229,9 @@ Mock.mock('/api/v1/sampleDetect/task/detectTaskDashboard', 'post', {
         0.3,
         0.7,
         0.8,
+        0.9,
+        0.8,
+        0.5,
         0.9
       ],
       '精度3': [
@@ -244,6 +242,9 @@ Mock.mock('/api/v1/sampleDetect/task/detectTaskDashboard', 'post', {
         0.6,
         0.7,
         0.4,
+        0.9,
+        0.8,
+        0.5,
         0.9
       ]
     },

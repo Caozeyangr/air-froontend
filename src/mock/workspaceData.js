@@ -91,6 +91,7 @@ Mock.mock('/api/v1/workspace/statisticWorkspace', 'post', {
             allocatable: 10, // 技术资源总数
             requested: 2 // 分配出去的资源
           }
+
         ]
       },
       {
