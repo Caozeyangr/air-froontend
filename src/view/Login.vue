@@ -167,6 +167,7 @@ const handleLogin = async () => {
       localStorage.setItem('isLoggedIn', 'true')
       localStorage.setItem('username', username.value)
       localStorage.setItem('token', result.data.token)
+      console.log('登录成功，获取到的token:', result.data.token)
 
       // 获取重定向路径，默认为home
       const redirectPath = route.query.redirect || '/home'

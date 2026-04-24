@@ -93,9 +93,15 @@
                 <el-tooltip content="样本编辑" placement="top">
                   <img :src="InfoFilled" class="op-icon" @click="handleInfo(scope.row)" />
                 </el-tooltip>
+                <!-- 取消任务/再训练任务
                 <el-tooltip :content="scope.row.isPaused ? '恢复' : '暂停'" placement="top">
                   <img :src="scope.row.isPaused ? pause : recover" class="op-icon" @click="handleRecover(scope.row)" />
+                </el-tooltip> -->
+                <el-tooltip :content="scope.row.status === 0 ? '取消任务' : '再训练任务'" placement="top">
+                  <img :src="scope.row.status === 0 ? pause : recover" class="op-icon" @click="handleRecover(scope.row)" />
                 </el-tooltip>
+                
+                
                 <el-tooltip content="删除" placement="top">
                   <img :src="Delete" class="op-icon delete" @click="handleDelete(scope.row)" />
                 </el-tooltip>
@@ -137,63 +143,106 @@ const modelDetailData = ref([])
 // ========== 训练列表数据 ==========
 const trainingListData = ref([])
 
-// 从mock接口加载数据
+// 从真实接口加载数据
 const loadData = async () => {
   try {
+    const token = getApiToken()
+    console.log('queryDetectTaskList携带的token:', token)
+    if (!token) {
+      redirectToLogin('请先登录')
+      return
+    }
     // 调用训练任务列表查询接口
-    const taskListResponse = await request.post('/api/v1/sampleDetect/task/queryDetectTaskList', {})
+    const taskListResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/queryDetectTaskList', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': token
+      },
+      body: JSON.stringify({
+        "pager": {
+          "pageSize": 2,
+          "currentPage": 1
+        },
+        // "total": 17
+
+        
+      })
+    })
+    const taskListData = await taskListResponse.json()
+    console.log('任务列表接口返回数据:', taskListData)
 
     // 调用挖掘统计信息查询接口
-    const dashboardResponse = await request.post('/api/v1/sampleDetect/task/detectTaskDashboard', {})
-    const dashboardData = dashboardResponse
+    const dashboardResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/detectTaskDashboard', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': token
+      },
+      body: JSON.stringify({
+        "id": 1
+      })
+    })
+    console.log('detectTaskDashboard携带的token:', token)
+    const dashboardData = await dashboardResponse.json()
+    console.log('挖掘统计信息接口返回数据:', dashboardData)
 
-    const taskListData = taskListResponse
-    trainingListData.value = taskListData.data.records
+    trainingListData.value = taskListData.data?.records || []
 
     // 获取 sampleSetResultId（从挖掘列表第一条记录）
-    const sampleSetResultId = taskListData.data.records[0]?.sampleSetResultId
+    const sampleSetResultId = taskListData.data?.records[0]?.sampleSetResultId
 
     // 获取 sampleTileList（从挖掘统计信息）
-    const sampleTileList = dashboardData.data.sampleTileList || []
+    const sampleTileList = dashboardData.data?.sampleTileList || []
 
     // 遍历 sampleTileList，发送图片请求
-    for (const tile of sampleTileList) {
-      const encodedTileId = encodeURIComponent(tile.tileId)
-      const imageUrl = `/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
-      console.log('发送样本瓦片请求:', imageUrl)
-      await request.get(imageUrl)
-    }
+    // for (const tile of sampleTileList) {
+    //   const encodedTileId = encodeURIComponent(tile.tileId)
+    //   const imageUrl = `/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
+    //   console.log('发送样本瓦片请求:', imageUrl)
+    //   await request.get(imageUrl)
+    // }
 
     // 映射数据到页面所需的结构
-    const accuracyMap = dashboardData.data.accuracyMap
+    const accuracyMap = dashboardData.data?.accuracyMap || {}
     const accuracyKeys = Object.keys(accuracyMap)
     const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC']
     
-    accuracyData.value = {
-      series: accuracyKeys.map((key, index) => ({
-        name: key,
-        data: accuracyMap[key].map(val => val * 100),
-        color: colors[index % colors.length]
-      })),
-      xAxis: {
-        data: accuracyMap[accuracyKeys[0]].map((_, index) => index * 150)
+    if (accuracyKeys.length > 0) {
+      accuracyData.value = {
+        series: accuracyKeys.map((key, index) => ({
+          name: key,
+          data: (accuracyMap[key] || []).map(val => val * 100),
+          color: colors[index % colors.length]
+        })),
+        xAxis: {
+          data: (accuracyMap[accuracyKeys[0]] || []).map((_, index) => index * 150)
+        }
+      }
+    } else {
+      // 提供默认数据结构
+      accuracyData.value = {
+        series: [],
+        xAxis: {
+          data: []
+        }
       }
     }
     
     gpuUsageData.value = {
       cpu: {
-        value: dashboardData.data.cpuUsage * 100
+        value: dashboardData.data?.cpuUsage ? dashboardData.data.cpuUsage * 100 : 0
       },
       gpu: {
-        value: dashboardData.data.gpuUsage * 100
+        value: dashboardData.data?.gpuUsage ? dashboardData.data.gpuUsage * 100 : 0
       }
     }
     
     modelDetailData.value = [
       {
-        modelName: dashboardData.data.taskName,
-        creator: dashboardData.data.createUsername,
-        bestAccuracy: dashboardData.data.maxPrecision * 100
+        modelName: dashboardData.data?.taskName || '未命名',
+        creator: dashboardData.data?.createUsername || '未知',
+        bestAccuracy: dashboardData.data?.maxPrecision ? dashboardData.data.maxPrecision * 100 : 0
       }
     ]
   } catch (error) {
@@ -277,17 +326,20 @@ let charts = []
 // ========== 图表配置 ==========
 const initAccuracyChart = () => {
   const chart = echarts.init(accuracyChart.value)
+  const series = accuracyData.value.series || []
+  const xAxisData = accuracyData.value.xAxis?.data || []
+  
   const option = {
-    color: accuracyData.value.series.map(s => s.color),
+    color: series.map(s => s.color),
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '10%',
+      bottom: '2%',
       top: '10%',
       containLabel: true
     },
     legend: {
-      data: accuracyData.value.series.map(s => s.name),
+      data: series.map(s => s.name),
       left: 'center',
       top: 0,
       textStyle: {
@@ -303,7 +355,7 @@ const initAccuracyChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: accuracyData.value.xAxis.data,
+      data: xAxisData,
       axisLine: { lineStyle: { color: '#ccc' } },
       axisLabel: {
         color: '#222222',
@@ -311,7 +363,7 @@ const initAccuracyChart = () => {
         fontFamily: 'PingFangSC, PingFang SC',
         fontWeight: 'normal',
         lineHeight: 17,
-        // rotate: 45
+        rotate: xAxisData.length > 8 ? 45 : 0
       }
     },
     yAxis: {
@@ -328,10 +380,10 @@ const initAccuracyChart = () => {
         lineHeight: 23
       }
     },
-    series: accuracyData.value.series.map(s => ({
+    series: series.map(s => ({
       name: s.name,
       type: 'line',
-      data: s.data,
+      data: s.data || [],
       smooth: true,
       symbol: 'none',
       lineStyle: { color: s.color, width: 2 }
@@ -575,45 +627,45 @@ const updateTrainingListData = async () => {
 
 const handleSearch = (row) => {
   console.log('查看详情', row)
-  let data = { "key": "info", "taskId": 1 }
+  let data = { "key": "info", "taskId": row.id }
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
-    console.log(`父页面已响应切换: {"key":"info","taskId": 1}, res: ${res}`);
+    console.log(`父页面已响应切换: {"key":"info","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
 const handleEdit = (row) => {
   console.log('日志', row)
-  messenger.send('IFRAME_BUTTON', { "key": "log", "taskId": 1 }, (res) => {
-    console.log(`父页面已响应切换: {"key":"log","taskId": 1}, res: ${res}`);
+  messenger.send('IFRAME_BUTTON', { "key": "log", "taskId": row.id }, (res) => {
+    console.log(`父页面已响应切换: {"key":"log","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
 const handleCopy = (row) => {
   console.log('tensorboard', row)
-  messenger.send('IFRAME_BUTTON', { "key": "tensorboard", "taskId": 1 }, (res) => {
-    console.log(`父页面已响应切换: {"key":"tensorboard","taskId": 1}, res: ${res}`);
+  messenger.send('IFRAME_BUTTON', { "key": "tensorboard", "taskId": row.id }, (res) => {
+    console.log(`父页面已响应切换: {"key":"tensorboard","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
 const handlePlay = (row) => {
   console.log('监控', row)
   // 打开资源使用量
-  messenger.send('IFRAME_BUTTON', { "key": "monitor", "taskId": 1 }, (res) => {
-    console.log(`父页面已响应切换: {"key":"monitor","taskId": 1}, res: ${res}`);
+  messenger.send('IFRAME_BUTTON', { "key": "monitor", "taskId": row.id }, (res) => {
+    console.log(`父页面已响应切换: {"key":"monitor","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
 const handleDocument = (row) => {
   console.log('发布', row)
-  messenger.send('IFRAME_BUTTON', { "key": "export", "taskId": 1 }, (res) => {
-    console.log(`父页面已响应切换: {"key":"export","taskId": 1}, res: ${res}`);
+  messenger.send('IFRAME_BUTTON', { "key": "export", "taskId": row.id }, (res) => {
+    console.log(`父页面已响应切换: {"key":"export","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
 const handleInfo = (row) => {
   console.log('样本编辑', row)
-  messenger.send('IFRAME_BUTTON', { "key": "export", "taskId": 1 }, (res) => {
-    console.log(`父页面已响应切换: {"key":"export","taskId": 1}, res: ${res}`);
+  messenger.send('IFRAME_BUTTON', { "key": "export", "taskId": row.id }, (res) => {
+    console.log(`父页面已响应切换: {"key":"export","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
@@ -622,8 +674,16 @@ const handleDelete = (row) => {
 }
 
 const handleRecover = (row) => {
-  console.log('恢复/暂停', row)
-  row.isPaused = !row.isPaused
+  // console.log('恢复/暂停', row)
+  // row.isPaused = !row.isPaused
+
+   if (row.status === 0) {
+    console.log('取消任务', row)
+    // 取消任务
+  } else {
+    console.log('再训练任务', row)
+    // 再训练任务
+  }
 
 }
 
