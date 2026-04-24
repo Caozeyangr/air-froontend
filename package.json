@@ -13,7 +13,7 @@
     "@zip.js/zip.js": "^2.0.0",
     "axios": "^1.15.2",
     "cesium": "^1.115.0",
-    "echarts": "^6.0.0",
+    "echarts": "^5.4.3",
     "echarts-gl": "^2.0.9",
     "element-plus": "^2.13.7",
     "vue": "^3.4.21",

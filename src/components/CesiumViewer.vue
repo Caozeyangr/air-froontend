@@ -49,7 +49,9 @@ import { ref, computed, onMounted, onUnmounted, reactive, nextTick } from 'vue'
 import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 // 影像瓦片服务地址（XYZ 格式，{z}/{x}/{y}）
-const TILE_URL = 'http://agri.cangling.cn:22002/api/v1/map3/ce0a07f5ef1062b8c90047d2051efb0c742bb8795bc9be5e24b1bbf7016f781a/{z}/{x}/{y}.png'
+const TILE_URL = 'https://agri.cangling.cn:22002/api/v1/map3/ce0a07f5ef1062b8c90047d2051efb0c742bb8795bc9be5e24b1bbf7016f781a/{z}/{x}/{y}.png'
+// 可选第二路叠加瓦片（用于“瓦片夹杂/混合”），不配则不启用
+const TILE_BLEND_URL = import.meta.env?.VITE_TILE_BLEND_URL || ''
 
 const cesiumWrapRef = ref(null)
 const cesiumContainer = ref(null)
@@ -962,6 +964,8 @@ async function addChinaBoundaryFromGeoJson() {
 // 背景图裁剪矩形：必须与背景图的拉伸设计匹配（否则会出现“中间底图不见了”）
 // 在保证匹配的前提下，略微加宽，让初始视野缩放时不容易露边。
 let IMAGERY_RECT = Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
+const TILE_MIN_LEVEL = 1
+const TILE_MAX_LEVEL = 18
 
 function computeMarkersBoundsRect(markers, { paddingScale = 1.45 } = {}) {
   let west = Infinity
@@ -1004,13 +1008,40 @@ function updateBaseImageryRectangle(rect) {
   if (!viewer || !rect) return
   IMAGERY_RECT = rect
   viewer.imageryLayers.removeAll()
-  const tileImagery = new Cesium.UrlTemplateImageryProvider({
-    url: TILE_URL,
-    minimumLevel: 0,
-    maximumLevel: 18
-  })
-  viewer.imageryLayers.addImageryProvider(tileImagery)
+  addBaseImagery()
   viewer.scene.requestRender()
+}
+
+function addBaseImagery() {
+  if (!viewer) return
+  const provider = new Cesium.UrlTemplateImageryProvider({
+    url: TILE_URL,
+    minimumLevel: TILE_MIN_LEVEL,
+    maximumLevel: TILE_MAX_LEVEL,
+    rectangle: IMAGERY_RECT,
+    tilingScheme: new Cesium.WebMercatorTilingScheme()
+  })
+  provider.errorEvent.addEventListener((tileError) => {
+    // 仅记录主瓦片服务错误，避免外网 fallback 在内网环境持续超时报错刷屏
+    console.warn('主底图瓦片加载失败，请检查 TILE_URL 模板/层级范围/服务鉴权', tileError)
+  })
+  const baseLayer = viewer.imageryLayers.addImageryProvider(provider)
+  // 仅在配置了第二路瓦片时启用“夹杂/叠加”
+  if (TILE_BLEND_URL) {
+    const blendProvider = new Cesium.UrlTemplateImageryProvider({
+      url: TILE_BLEND_URL,
+      minimumLevel: TILE_MIN_LEVEL,
+      maximumLevel: TILE_MAX_LEVEL,
+      rectangle: IMAGERY_RECT,
+      tilingScheme: new Cesium.WebMercatorTilingScheme()
+    })
+    blendProvider.errorEvent.addEventListener((tileError) => {
+      console.warn('叠加瓦片加载失败（不影响主底图）', tileError)
+    })
+    const blendLayer = viewer.imageryLayers.addImageryProvider(blendProvider)
+    blendLayer.alpha = 0.35
+  }
+  return baseLayer
 }
 
 /** 初始视野：全国居中、五省点位均在框内（接近设计稿整图比例） */
@@ -1410,6 +1441,8 @@ function setupMarkerInteraction() {
 
 onMounted(async () => {
   try {
+    // 不依赖 Cesium Ion 默认 token，避免 INVALID_TOKEN 导致底图请求失败
+    Cesium.Ion.defaultAccessToken = ''
     viewer = new Cesium.Viewer(cesiumContainer.value, {
     animation: false,
     baseLayerPicker: false,
@@ -1425,6 +1458,8 @@ onMounted(async () => {
     terrain: undefined,
     mapProjection: webMercatorProjection,
     sceneMode: Cesium.SceneMode.SCENE2D,
+    // 禁用默认 baseLayer，完全由下方自定义瓦片控制
+    baseLayer: false,
     requestRenderMode: true,
     contextOptions: {
       webgl: {
@@ -1433,14 +1468,8 @@ onMounted(async () => {
     }
   })
 
-  const tileImagery = new Cesium.UrlTemplateImageryProvider({
-    url: TILE_URL,
-    minimumLevel: 0,
-    maximumLevel: 18
-  })
-
   viewer.imageryLayers.removeAll()
-  viewer.imageryLayers.addImageryProvider(tileImagery)
+  addBaseImagery()
 
   // 供叠加层（ECharts 等）获取屏幕坐标使用
   if (typeof window !== 'undefined') {
