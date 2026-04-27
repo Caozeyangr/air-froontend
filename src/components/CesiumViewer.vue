@@ -50,8 +50,6 @@ import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 // 影像瓦片服务地址（XYZ 格式，{z}/{x}/{y}）
 const TILE_URL = 'https://agri.cangling.cn:22002/api/v1/map3/ce0a07f5ef1062b8c90047d2051efb0c742bb8795bc9be5e24b1bbf7016f781a/{z}/{x}/{y}.png'
-// 可选第二路叠加瓦片（用于“瓦片夹杂/混合”），不配则不启用
-const TILE_BLEND_URL = import.meta.env?.VITE_TILE_BLEND_URL || ''
 
 const cesiumWrapRef = ref(null)
 const cesiumContainer = ref(null)
@@ -480,17 +478,13 @@ function getScreenProximityPickParams() {
 }
 
 async function createBlueMarkerIconDataUrlFromOrange(url) {
-  // 未选中态：按设计参数绘制（CSS 等效）
-  // width: 100px; height: 30px;
-  // background: linear-gradient(93deg, #0B88F9 0%, #34C8FF 100%);
-  // box-shadow: 0px 2px 4px 0px rgba(0,82,169,0.5);
-  // border-radius: 4px; border: 1px solid #FFFFFF; opacity: 0.77;
+  // 未选中态：只保留箭头样式，隐藏框体
   const dpr = 2
   const boxW = 100
-  const boxH = 30
+  const boxH = 30 // 保持原框体高度，确保箭头计算逻辑与之前一致
   const totalW = boxW
   const arrowH = 18
-  // 输出尺寸严格对齐：30（框体）+18（箭头）= 48
+  // 保持原输出尺寸：30（框体）+18（箭头）= 48
   const totalH = boxH + arrowH
 
   const canvas = document.createElement('canvas')
@@ -503,46 +497,6 @@ async function createBlueMarkerIconDataUrlFromOrange(url) {
   ctx.clearRect(0, 0, totalW, totalH)
 
   const opacity = 0.77
-  const r = 4
-  const x = 0
-  const y = 0
-
-  // shadow（注意：不额外留 padding，阴影会在边缘略裁剪，但保证尺寸严格一致）
-  ctx.save()
-  ctx.globalAlpha = opacity
-  ctx.shadowColor = 'rgba(0,82,169,0.5)'
-  ctx.shadowBlur = 4
-  ctx.shadowOffsetX = 0
-  ctx.shadowOffsetY = 2
-
-  // rounded rect path
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + boxW - r, y)
-  ctx.quadraticCurveTo(x + boxW, y, x + boxW, y + r)
-  ctx.lineTo(x + boxW, y + boxH - r)
-  ctx.quadraticCurveTo(x + boxW, y + boxH, x + boxW - r, y + boxH)
-  ctx.lineTo(x + r, y + boxH)
-  ctx.quadraticCurveTo(x, y + boxH, x, y + boxH - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
-
-  // fill gradient (approx 93deg)
-  const grad = ctx.createLinearGradient(0, boxH, boxW, 0)
-  grad.addColorStop(0, '#0B88F9')
-  grad.addColorStop(1, '#34C8FF')
-  ctx.fillStyle = grad
-  ctx.fill()
-  ctx.restore()
-
-  // border
-  ctx.save()
-  ctx.globalAlpha = opacity
-  ctx.lineWidth = 1
-  ctx.strokeStyle = '#FFFFFF'
-  ctx.stroke()
-  ctx.restore()
 
   // arrow: 复用原图箭头形状，转蓝后贴到底部（风格与选中态一致）
   const arrowInfo = await new Promise((resolve) => {
@@ -671,6 +625,98 @@ async function createBlueMarkerIconDataUrlFromOrange(url) {
     }
   }
 
+  return canvas.toDataURL('image/png')
+}
+
+/**
+ * 生成带样式的标签图片（渐变背景 + 白色边框 + 阴影）
+ * 样式：background: linear-gradient(93deg, #0B88F9 0%, #34C8FF 100%);
+ *       box-shadow: 0px 2px 4px 0px rgba(0,82,169,0.5);
+ *       border-radius: 4px;
+ *       border: 1px solid #FFFFFF;
+ *       opacity: 0.77;
+ */
+function createStyledLabelImage(text) {
+  const dpr = 2
+  const fontSize = 10
+  const paddingX = 4
+  const paddingY = 2
+  const borderRadius = 2
+  const borderWidth = 1
+  
+  // 创建临时canvas测量文字宽度
+  const measureCanvas = document.createElement('canvas')
+  const measureCtx = measureCanvas.getContext('2d')
+  measureCtx.font = `${fontSize}px PingFangSC, "PingFang SC", sans-serif`
+  const textMetrics = measureCtx.measureText(text)
+  const textWidth = textMetrics.width
+  
+  // 计算画布尺寸
+  const boxWidth = Math.ceil(textWidth + paddingX * 2 + borderWidth * 2)
+  const boxHeight = Math.ceil(fontSize + paddingY * 2 + borderWidth * 2)
+  
+  const canvas = document.createElement('canvas')
+  canvas.width = boxWidth * dpr
+  canvas.height = boxHeight * dpr
+  const ctx = canvas.getContext('2d')
+  
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, boxWidth, boxHeight)
+  
+  const opacity = 0.77
+  const x = borderWidth
+  const y = borderWidth
+  const w = boxWidth - borderWidth * 2
+  const h = boxHeight - borderWidth * 2
+  const r = borderRadius
+  
+  // 绘制阴影
+  ctx.save()
+  ctx.globalAlpha = opacity
+  ctx.shadowColor = 'rgba(0, 82, 169, 0.5)'
+  ctx.shadowBlur = 4
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 2
+  
+  // 绘制圆角矩形路径
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
+  
+  // 填充渐变背景 (93deg, #0B88F9 0%, #34C8FF 100%)
+  const gradient = ctx.createLinearGradient(0, h, w, 0)
+  gradient.addColorStop(0, '#0B88F9')
+  gradient.addColorStop(1, '#34C8FF')
+  ctx.fillStyle = gradient
+  ctx.fill()
+  ctx.restore()
+  
+  // 绘制白色边框
+  ctx.save()
+  ctx.globalAlpha = opacity
+  ctx.lineWidth = borderWidth
+  ctx.strokeStyle = '#FFFFFF'
+  ctx.stroke()
+  ctx.restore()
+  
+  // 绘制文字
+  ctx.save()
+  // ctx.globalAlpha = opacity
+  ctx.font = `${fontSize}px PingFangSC, "PingFang SC", sans-serif`
+  ctx.fillStyle = '#FFFFFF'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, boxWidth / 2, boxHeight / 2)
+  ctx.restore()
+  
   return canvas.toDataURL('image/png')
 }
 
@@ -850,7 +896,7 @@ function addChinaBoundary3857() {
     name: '中国区域-3857',
     polygon: {
       hierarchy: new Cesium.PolygonHierarchy(wm3857Positions),
-      material: Cesium.Color.fromCssColorString('#EAF6FF').withAlpha(0.32),
+      material: Cesium.Color.TRANSPARENT,
       outline: true,
       outlineColor: glowBlue.withAlpha(0.9),
       outlineWidth: 1,
@@ -871,8 +917,8 @@ async function addChinaBoundaryFromGeoJson() {
   const glowBlue = Cesium.Color.fromCssColorString('#42ACFF').withAlpha(0.92)
   const innerWhite = Cesium.Color.WHITE.withAlpha(0.9)
   const provinceLine = Cesium.Color.fromCssColorString('#BDE9FF').withAlpha(0.34)
-  // 恢复为最初的白色地图面（不要灰色）
-  const fillColor = Cesium.Color.fromCssColorString('#F8FCFF').withAlpha(0.98)
+  // 地图背景改为透明
+  const fillColor = Cesium.Color.TRANSPARENT
   // 外线阴影降到很弱，仅保留一点立体边缘
   const edgeShadow = Cesium.Color.fromCssColorString('#6F7782').withAlpha(0.1)
 
@@ -964,8 +1010,6 @@ async function addChinaBoundaryFromGeoJson() {
 // 背景图裁剪矩形：必须与背景图的拉伸设计匹配（否则会出现“中间底图不见了”）
 // 在保证匹配的前提下，略微加宽，让初始视野缩放时不容易露边。
 let IMAGERY_RECT = Cesium.Rectangle.fromDegrees(59, 7, 151, 61)
-const TILE_MIN_LEVEL = 1
-const TILE_MAX_LEVEL = 18
 
 function computeMarkersBoundsRect(markers, { paddingScale = 1.45 } = {}) {
   let west = Infinity
@@ -1008,40 +1052,13 @@ function updateBaseImageryRectangle(rect) {
   if (!viewer || !rect) return
   IMAGERY_RECT = rect
   viewer.imageryLayers.removeAll()
-  addBaseImagery()
-  viewer.scene.requestRender()
-}
-
-function addBaseImagery() {
-  if (!viewer) return
-  const provider = new Cesium.UrlTemplateImageryProvider({
+  const tileImagery = new Cesium.UrlTemplateImageryProvider({
     url: TILE_URL,
-    minimumLevel: TILE_MIN_LEVEL,
-    maximumLevel: TILE_MAX_LEVEL,
-    rectangle: IMAGERY_RECT,
-    tilingScheme: new Cesium.WebMercatorTilingScheme()
+    minimumLevel: 0,
+    maximumLevel: 18
   })
-  provider.errorEvent.addEventListener((tileError) => {
-    // 仅记录主瓦片服务错误，避免外网 fallback 在内网环境持续超时报错刷屏
-    console.warn('主底图瓦片加载失败，请检查 TILE_URL 模板/层级范围/服务鉴权', tileError)
-  })
-  const baseLayer = viewer.imageryLayers.addImageryProvider(provider)
-  // 仅在配置了第二路瓦片时启用“夹杂/叠加”
-  if (TILE_BLEND_URL) {
-    const blendProvider = new Cesium.UrlTemplateImageryProvider({
-      url: TILE_BLEND_URL,
-      minimumLevel: TILE_MIN_LEVEL,
-      maximumLevel: TILE_MAX_LEVEL,
-      rectangle: IMAGERY_RECT,
-      tilingScheme: new Cesium.WebMercatorTilingScheme()
-    })
-    blendProvider.errorEvent.addEventListener((tileError) => {
-      console.warn('叠加瓦片加载失败（不影响主底图）', tileError)
-    })
-    const blendLayer = viewer.imageryLayers.addImageryProvider(blendProvider)
-    blendLayer.alpha = 0.35
-  }
-  return baseLayer
+  viewer.imageryLayers.addImageryProvider(tileImagery)
+  viewer.scene.requestRender()
 }
 
 /** 初始视野：全国居中、五省点位均在框内（接近设计稿整图比例） */
@@ -1185,6 +1202,10 @@ function computeClusters() {
  */
 function clearClusterEntities() {
   clusterEntities.forEach(entity => {
+    // 清除关联的标签实体
+    if (entity.labelEntity) {
+      viewer.entities.remove(entity.labelEntity)
+    }
     viewer.entities.remove(entity)
   })
   clusterEntities = []
@@ -1222,19 +1243,26 @@ function renderClusters(clusters) {
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
-      label: isCluster ? undefined : {
-        text: cluster.markers[0].name.length > 8 
-          ? `${cluster.markers[0].name.slice(0, 8)}...` 
-          : cluster.markers[0].name,
-        font: '16px PingFangSC, PingFang SC, sans-serif',
-        fillColor: LABEL_TEXT,
-        style: Cesium.LabelStyle.FILL,
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -26),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY
-      }
+      label: undefined
     })
+    
+    // 为单点添加样式化标签（使用billboard显示带样式的文字图片）
+    if (!isCluster) {
+      const labelImage = createStyledLabelImage(cluster.markers[0].name)
+      const labelEntity = viewer.entities.add({
+        id: `cluster_label_${idx}`,
+        position,
+        billboard: {
+          image: labelImage,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          pixelOffset: new Cesium.Cartesian2(0, -13),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      })
+      // 将标签实体关联到主实体，方便后续管理
+      entity.labelEntity = labelEntity
+    }
     
     // 保存聚类信息到实体
     entity.clusterData = cluster
@@ -1242,8 +1270,18 @@ function renderClusters(clusters) {
       attachPopupPayload(entity, cluster.markers[0])
     }
     
+    // 将实体添加到数组以便后续清除
     clusterEntities.push(entity)
   })
+}
+
+function wrapText(str, maxLen = 8) {
+  if (!str) return ''
+  let lines = []
+  for (let i = 0; i < str.length; i += maxLen) {
+    lines.push(str.slice(i, i + maxLen))
+  }
+  return lines.join('\n')
 }
 
 /**
@@ -1287,10 +1325,13 @@ function updateClusterVisibility() {
   
   if (height > CLUSTER_ZOOM_THRESHOLD) {
     // 远视图：显示聚合点
-    // 先清除具体点位
+    // 先清除具体点位和标签
     markerEntities.forEach((entry) => {
       if (entry?.billboardEntity) {
         viewer.entities.remove(entry.billboardEntity)
+      }
+      if (entry?.labelEntity) {
+        viewer.entities.remove(entry.labelEntity)
       }
     })
     markerEntities.clear()
@@ -1313,7 +1354,9 @@ function updateClusterVisibility() {
       const entityId = `${logicalId}__${idx}`
       
       const rawName = String(m?.name ?? '')
-      const labelText = rawName.length > 8 ? `${rawName.slice(0, 8)}...` : rawName
+      // const labelText = rawName.length > 8 ? `${rawName.slice(0, 8)}...` : rawName
+      const labelText = rawName
+
       
       const billboardEntity = viewer.entities.add({
         id: entityId,
@@ -1326,22 +1369,25 @@ function updateClusterVisibility() {
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
           disableDepthTestDistance: Number.POSITIVE_INFINITY
-        },
-        label: {
-          text: labelText,
-          font: '16px PingFangSC, PingFang SC, sans-serif',
-          fillColor: LABEL_TEXT,
-          style: Cesium.LabelStyle.FILL,
-          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        }
+      })
+      
+      // 添加样式化标签
+      const labelImage = createStyledLabelImage(labelText)
+      const labelEntity = viewer.entities.add({
+        id: `${entityId}_label`,
+        position,
+        billboard: {
+          image: labelImage,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -26),
-          width: 100,
-          height: 30,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          pixelOffset: new Cesium.Cartesian2(0, -13),
           disableDepthTestDistance: Number.POSITIVE_INFINITY
         }
       })
+
       attachPopupPayload(billboardEntity, m)
-      markerEntities.set(entityId, { billboardEntity })
+      markerEntities.set(entityId, { billboardEntity, labelEntity })
     })
   }
 }
@@ -1441,8 +1487,6 @@ function setupMarkerInteraction() {
 
 onMounted(async () => {
   try {
-    // 不依赖 Cesium Ion 默认 token，避免 INVALID_TOKEN 导致底图请求失败
-    Cesium.Ion.defaultAccessToken = ''
     viewer = new Cesium.Viewer(cesiumContainer.value, {
     animation: false,
     baseLayerPicker: false,
@@ -1458,8 +1502,6 @@ onMounted(async () => {
     terrain: undefined,
     mapProjection: webMercatorProjection,
     sceneMode: Cesium.SceneMode.SCENE2D,
-    // 禁用默认 baseLayer，完全由下方自定义瓦片控制
-    baseLayer: false,
     requestRenderMode: true,
     contextOptions: {
       webgl: {
@@ -1468,8 +1510,14 @@ onMounted(async () => {
     }
   })
 
+  const tileImagery = new Cesium.UrlTemplateImageryProvider({
+    url: TILE_URL,
+    minimumLevel: 0,
+    maximumLevel: 18
+  })
+
   viewer.imageryLayers.removeAll()
-  addBaseImagery()
+  viewer.imageryLayers.addImageryProvider(tileImagery)
 
   // 供叠加层（ECharts 等）获取屏幕坐标使用
   if (typeof window !== 'undefined') {
