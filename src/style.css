@@ -56,6 +56,12 @@ html, body {
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: 'FZZYJW--GB1';
+  src: url('@/assets/fonts/FZZYJW--GB1-0.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 @font-face {
   font-family: 'PingFang SC Medium';

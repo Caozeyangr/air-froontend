@@ -6,6 +6,8 @@ import Login from '../view/Login.vue'
 import Home from '../view/Home.vue'
 import Workstation from '../view/workstation.vue'
 import MiningTask from '../view/MiningTask.vue'
+import SampleStatistics from '../view/SampleStatistics.vue'
+import AgentManagement from '../view/AgentManagement.vue'
 
 // 创建路由实例
 const router = createRouter({
@@ -38,6 +40,18 @@ const router = createRouter({
       name: 'MiningTask',
       component: MiningTask,
       meta: { requiresAuth: true } // 任务管理需要认证
+    },
+    {
+      path: '/samplestatistics',
+      name: 'SampleStatistics',
+      component: SampleStatistics,
+      meta: { requiresAuth: true } // 样本统计需要认证
+    },
+    {
+      path: '/agentmanagement',
+      name: 'AgentManagement',
+      component: AgentManagement,
+      meta: { requiresAuth: true } // 智能体管理需要认证
     },
     {
       path: '/:pathMatch(.*)*',

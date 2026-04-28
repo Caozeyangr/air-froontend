@@ -51,12 +51,27 @@ import 'cesium/Build/Cesium/Widgets/widgets.css'
 // 影像瓦片服务地址（XYZ 格式，{z}/{x}/{y}）
 const TILE_URL = 'https://agri.cangling.cn:22002/api/v1/map3/ce0a07f5ef1062b8c90047d2051efb0c742bb8795bc9be5e24b1bbf7016f781a/{z}/{x}/{y}.png'
 
+// const TILE_URL = 'https://ndrcc.cangling.cn:22002/api/v1/product/download/1908e882bcd24300a5cff2ad0f01ff55/字体/地球贴图3.png'
+
+
+// var imageryProvider = new Cesium.SingleTileImageryProvider({
+//             "url": "https://ndrcc.cangling.cn:22002/api/v1/product/download/1908e882bcd24300a5cff2ad0f01ff55/字体/地球贴图3.png",
+//             id: '1'
+//         })
+//         viewer.imageryLayers.addImageryProvider(imageryProvider)
+
+
+
+
 const cesiumWrapRef = ref(null)
 const cesiumContainer = ref(null)
 let viewer = null
 let clickHandler = null
 let postRenderListener = null
 let domClickHandler = null
+
+const BOUNDARY_OFFSET_LON = 0.2
+const BOUNDARY_OFFSET_LAT = -0.95
 
 const ORANGE = Cesium.Color.fromCssColorString('#FF9430')
 const BLUE = Cesium.Color.fromCssColorString('#165DFF')
@@ -186,8 +201,10 @@ function fromWebMercator(x, y, height = 0) {
   return Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, height)
 }
 
-function toWebMercator(lon, lat) {
-  const cartographic = Cesium.Cartographic.fromDegrees(lon, lat)
+function toWebMercator(lon, lat, offsetLon = 0, offsetLat = 0) {
+  const finalLon = lon + offsetLon
+  const finalLat = lat + offsetLat
+  const cartographic = Cesium.Cartographic.fromDegrees(finalLon, finalLat)
   const cartesian = webMercatorProjection.project(cartographic)
   return { x: cartesian.x, y: cartesian.y }
 }
@@ -197,7 +214,7 @@ function fromDegreesArrayToWebMercator(degreesArray) {
   for (let i = 0; i < degreesArray.length; i += 2) {
     const lon = degreesArray[i]
     const lat = degreesArray[i + 1]
-    const wm = toWebMercator(lon, lat)
+    const wm = toWebMercator(lon, lat, BOUNDARY_OFFSET_LON, BOUNDARY_OFFSET_LAT)
     result.push(fromWebMercator(wm.x, wm.y))
   }
   return result
@@ -218,7 +235,7 @@ function ringLonLatToPositions(ring, height = 0) {
     const lon = p[0]
     const lat = p[1]
     if (lon == null || lat == null) continue
-    const wm = toWebMercator(lon, lat)
+    const wm = toWebMercator(lon, lat, BOUNDARY_OFFSET_LON, BOUNDARY_OFFSET_LAT)
     positions.push(fromWebMercator(wm.x, wm.y, height))
   }
   return positions
@@ -1500,6 +1517,7 @@ onMounted(async () => {
     navigationHelpButton: false,
     selectionIndicator: false,
     terrain: undefined,
+    imageryProvider: false,  // 禁用默认的影像图层
     mapProjection: webMercatorProjection,
     sceneMode: Cesium.SceneMode.SCENE2D,
     requestRenderMode: true,
@@ -1510,11 +1528,18 @@ onMounted(async () => {
     }
   })
 
-  const tileImagery = new Cesium.UrlTemplateImageryProvider({
-    url: TILE_URL,
-    minimumLevel: 0,
-    maximumLevel: 18
+  // const tileImagery = new Cesium.UrlTemplateImageryProvider({
+  //   url: TILE_URL,
+  //   minimumLevel: 0,
+  //   maximumLevel: 18
+  // })
+
+const tileImagery = new Cesium.SingleTileImageryProvider({
+    url: 'https://ndrcc.cangling.cn:22002/api/v1/product/download/1908e882bcd24300a5cff2ad0f01ff55/字体/地球贴图3.png',
+    tileWidth: 256,
+    tileHeight: 256
   })
+
 
   viewer.imageryLayers.removeAll()
   viewer.imageryLayers.addImageryProvider(tileImagery)
