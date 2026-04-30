@@ -5,14 +5,8 @@
         <!-- 任务列表 -->
         <div class="task-list-content">
           <div v-for="(img, index) in imageList" :key="index" class="task-image-item">
-            <el-image
-              v-if="img.url"
-              :src="img.url"
-              class="task-image"
-              :preview-src-list="previewSrcList"
-              :initial-index="index"
-              preview-teleported
-            ></el-image>
+            <el-image v-if="img.url" :src="img.url" class="task-image" :preview-src-list="previewSrcList"
+              :initial-index="index" preview-teleported></el-image>
             <div v-else class="task-image-placeholder">加载中...</div>
           </div>
         </div>
@@ -320,7 +314,7 @@ const refreshTaskList = async () => {
         }
       })
     })
-    
+
     const taskListData = await taskListResponse.json()
     trainingListData.value = taskListData.data?.records || []
   } catch (error) {
@@ -828,7 +822,7 @@ const handleSearch = (row, key) => {
   let data = { "key": key, "taskId": row.id }
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
     console.log(`父页面已响应切换: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
-      // 操作完成后只刷新任务列表
+    // 操作完成后只刷新任务列表
     // refreshTaskList()
   });
 }
@@ -875,9 +869,9 @@ onMounted(async () => {
     targetWindow: window.parent,
     targetOrigin: '*'
   });
-   callback = (data) => {
+  callback = (data) => {
     // addLog(`收到父页面刷新通知`, 'success');
-    loadData()
+    refreshTaskList()
   }
   messenger.on('IFRAME_RELOAD', callback);
 
