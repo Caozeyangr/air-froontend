@@ -332,7 +332,6 @@ const resourceApply = ref({})
 //     //   gpuTrendData.value = data.trendData.gpu 
 //     // }
 //   } catch (error) {
-//     console.error('Failed to load data:', error)
 //   }
 // }
 
@@ -455,7 +454,6 @@ const loadData = async () => {
             data: usageData.value || []
           }
         }
-        console.warn('Invalid resource usage data format:', usageData)
         return { times: [], data: [] }
       }
       
@@ -465,7 +463,6 @@ const loadData = async () => {
       gpuTrendData.value = generateTrendData(resourceUsage.gpuUsage, 'GPU')
     }
   } catch (error) {
-    console.error('Failed to load data:', error)
   }
 }
 

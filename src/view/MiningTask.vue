@@ -707,7 +707,6 @@ const updateTrainingListData = async () => {
       }
     })
     if (result.code !== 200) {
-      console.warn('getDashboardStats 错误:', result.message || result.code || '')
       // 检查是否是登录权限错误
       if (result?.message?.includes('需要登录权限')) {
         redirectToLogin('登录已过期，请重新登录')
@@ -715,7 +714,6 @@ const updateTrainingListData = async () => {
       return
     }
     if (!result?.success) {
-      console.warn('getDashboardStats 失败:', result?.message || '未知错误')
       // 检查是否是登录权限错误
       if (result?.message?.includes('需要登录权限')) {
         redirectToLogin('登录已过期，请重新登录')
@@ -723,17 +721,14 @@ const updateTrainingListData = async () => {
       return
     }
     const data = result.data || {}
-    console.log(data, 'dataaaaaa')
     if (data.records) {
       trainingListData.value = data.records
     }
   } catch (e) {
-    console.warn('getDashboardStats 请求异常', e)
   }
 }
 
 const handleRowClick = async (row) => {
-  console.log('点击任务:', row)
 
   const token = getApiToken()
   if (!token) {
@@ -744,7 +739,6 @@ const handleRowClick = async (row) => {
   const taskId = row.id
   const sampleSetResultId = row.sampleSetResultId
 
-  console.log('切换到任务:', taskId, 'sampleSetResultId:', sampleSetResultId)
 
   const dashboardResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/detectTaskDashboard', {
     method: 'POST',
@@ -827,7 +821,6 @@ const handleRowClick = async (row) => {
 const handleSearch = (row, key) => {
   let data = { "key": key, "taskId": row.id }
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
-    console.log(`父页面已响应切换: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
       // 操作完成后只刷新任务列表
     // refreshTaskList()
   });
@@ -837,7 +830,6 @@ const handleSearch = (row, key) => {
 //   const key = row.isPaused ? 'resume' : 'pause'
 //   let data = { "key": key, "taskId": row.id }
 //   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
-//     console.log(`父页面已响应${key}: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
 //     loadData()
 //   });
 // }
@@ -845,7 +837,6 @@ const handleSearch = (row, key) => {
 const handleAddTask = () => {
   let data = { "key": "addTask" }
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
-    console.log(`父页面已响应新增任务: {"key":"addTask"}, res: ${res}`);
     // 操作完成后只刷新任务列表
     // refreshTaskList()
   });
@@ -877,7 +868,7 @@ onMounted(async () => {
   });
    callback = (data) => {
     // addLog(`收到父页面刷新通知`, 'success');
-    loadData()
+    refreshTaskList()
   }
   messenger.on('IFRAME_RELOAD', callback);
 
