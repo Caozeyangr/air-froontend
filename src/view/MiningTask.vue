@@ -829,7 +829,7 @@ const handleSearch = (row, key) => {
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
     console.log(`父页面已响应切换: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
       // 操作完成后只刷新任务列表
-    refreshTaskList()
+    // refreshTaskList()
   });
 }
 
@@ -847,7 +847,7 @@ const handleAddTask = () => {
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
     console.log(`父页面已响应新增任务: {"key":"addTask"}, res: ${res}`);
     // 操作完成后只刷新任务列表
-    refreshTaskList()
+    // refreshTaskList()
   });
 }
 
