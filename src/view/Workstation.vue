@@ -126,27 +126,23 @@
       <div class="bottom-section">
         <!-- 设备GPU使用量表格1 -->
         <div class="table-card card">
-          <div class="card-title">设备GPU使用量</div>
+          <div class="card-title">用户资源使用量</div>
           <el-table :data="gpuUsageTable1" style="width: 100%; height: calc(100% - 40px)" size="small">
             <el-table-column prop="name" label="姓名" min-width="80" />
             <el-table-column prop="applyCount" label="申请数量" min-width="80" />
-            <el-table-column prop="auditCount" label="审核数量" min-width="80" />
-            <el-table-column prop="runCount" label="运行数量" min-width="80" />
+            <el-table-column prop="cpu" label="CPU" min-width="80" />
+            <el-table-column prop="gpu" label="GPU" min-width="80" />
           </el-table>
         </div>
 
         <!-- 设备GPU使用量表格2 -->
         <div class="table-card2 card">
-          <div class="card-title">设备GPU使用量</div>
+          <div class="card-title">工作空间</div>
           <el-table :data="gpuUsageTable2" style="width: 100%; height: calc(100% - 40px)" size="small">
             <el-table-column prop="name" label="姓名" min-width="80" />
             <el-table-column prop="ip" label="IP" min-width="100" />
             <el-table-column prop="cpu" label="CPU" min-width="60" />
-            <el-table-column prop="gpu" label="显卡" min-width="100">
-              <template #default="scope">
-                {{ scope.row.gpu }}<span class="unit">G</span>
-              </template>
-            </el-table-column>
+            <el-table-column prop="gpu" label="显卡" min-width="100" />
             <el-table-column prop="memory" label="内存" min-width="80">
               <template #default="scope">
                 {{ scope.row.memory }}<span class="unit">G</span>
@@ -171,8 +167,8 @@
             <div class="phys-value warning">{{ physicalStatus.abnormal || 0 }}</div>
           </div>
           <div class="phys-item">
-            <div class="phys-label">集群监控状态</div>
-            <div class="phys-value normal">{{ physicalStatus.monitorStatus || 0 }}</div>
+            <div class="phys-label">可用物理机</div>
+            <div class="phys-value normal">{{ physicalStatus.available || 0 }}</div>
           </div>
         </div>
       </div>
@@ -357,7 +353,6 @@ const loadData = async () => {
       body: JSON.stringify({})
     })
     const result = await response.json()
-    console.log('workspaceDashboard接口返回数据:', result)
     
     if (result.code === 200 && result.data) {
       const data = result.data
@@ -379,7 +374,7 @@ const loadData = async () => {
       physicalStatus.value = {
         total: totalNodes,
         abnormal: abnormalNodes,
-        monitorStatus: abnormalNodes === 0 ? 0 : 1
+        available: totalNodes - abnormalNodes
       }
       
       // 资源分配统计
@@ -410,8 +405,8 @@ const loadData = async () => {
       gpuUsageTable1.value = (data.userCumulativeUsageList || []).map(item => ({
         name: item.username || item.userName || '-',
         applyCount: item.applyCount || 0,
-        auditCount: 0,
-        runCount: 0
+        cpu: item.cpuInCores || Math.round((item.cpu || 0) / 1000) || 0,
+        gpu: item.gpu || 0
       }))
       
       // 设备GPU使用量表格2 - 从workspaces获取
@@ -424,46 +419,50 @@ const loadData = async () => {
         machineName: item.machineName || item.containerId || '-'
       }))
       
-      // GPU使用量图表数据 - 从nodeMetrics中的accelerators统计
-      const categories = nodeMetrics.flatMap(node => 
-        node.accelerators.map(acc => acc.resourceName)
-      )
-      const requestedList = nodeMetrics.flatMap(node =>
-        node.accelerators.map(acc => acc.requested || 0)
-      )
-      const allocatableList = nodeMetrics.flatMap(node =>
-        node.accelerators.map(acc => acc.allocatable || 0)
-      )
+      // GPU使用量图表数据 - 从nodeMetrics直接获取gpu、gpuUsed和name字段
+      const categories = nodeMetrics.map(node => node.name)
+      const allocatableList = nodeMetrics.map(node => node.gpu || 0)
+      const requestedList = nodeMetrics.map(node => node.gpuUsed || 0)
       gpuUsageData.value = {
         categories: categories.length > 0 ? categories : ['暂无数据'],
-        data1: requestedList.length > 0 ? requestedList : [0],
-        data3: allocatableList.length > 0 ? allocatableList : [0]
+        data1: allocatableList.length > 0 ? allocatableList : [0],
+        data3: requestedList.length > 0 ? requestedList : [0]
       }
       
       // 资源使用率趋势数据 - 从resourceUsage获取
       const resourceUsage = data.resourceUsage || {}
-      const generateTrendData = (usageData) => {
-        if (!usageData || !usageData.timestamp || !usageData.value) {
-          const times = []
-          const data = []
-          const now = new Date()
-          for (let i = 0; i < 10; i++) {
-            const t = new Date(now.getTime() - (9 - i) * 60000)
-            times.push(t.toTimeString().slice(0, 5))
-            data.push(Math.floor(Math.random() * 40) + 40)
+      
+      const generateTrendData = (usageData, type) => {
+        // 如果接口没有返回数据或数据为空，返回空数组（不使用假数据）
+        if (!usageData || (Array.isArray(usageData) && usageData.length === 0)) {
+          return { times: [], data: [] }
+        }
+        if (Array.isArray(usageData)) {
+          // 使用接口返回的所有真实数据，不做截取
+          const result = {
+            times: usageData.map(item => {
+              const date = new Date(item.timestamp)
+              const timeStr = date.toTimeString().slice(0, 8)
+              return timeStr
+            }),
+            data: usageData.map(item => item.value)
           }
-          return { times, data }
+          return result
         }
-        return {
-          times: usageData.timestamp || [],
-          data: usageData.value || []
+        if (usageData.timestamp && usageData.value) {
+          return {
+            times: usageData.timestamp || [],
+            data: usageData.value || []
+          }
         }
+        console.warn('Invalid resource usage data format:', usageData)
+        return { times: [], data: [] }
       }
       
-      cpuTrendData.value = generateTrendData(resourceUsage.cpu)
-      memoryTrendData.value = generateTrendData(resourceUsage.memory)
-      storageTrendData.value = generateTrendData(resourceUsage.storage)
-      gpuTrendData.value = generateTrendData(resourceUsage.gpu)
+      cpuTrendData.value = generateTrendData(resourceUsage.cpuUsage, 'CPU')
+      memoryTrendData.value = generateTrendData(resourceUsage.memoryUsage, '内存')
+      storageTrendData.value = generateTrendData(resourceUsage.diskUsage, '磁盘')
+      gpuTrendData.value = generateTrendData(resourceUsage.gpuUsage, 'GPU')
     }
   } catch (error) {
     console.error('Failed to load data:', error)
@@ -521,6 +520,8 @@ let charts = []
 const initGpuUsageChart = () => {
   const chart = echarts.init(gpuUsageChart.value)
   const barWidth = 20
+  const barGap = 2
+  const symbolOffsetX = barWidth / 2 + barGap / 2 +1.2
   const option = {
     grid: {
       left: '3%',
@@ -537,12 +538,15 @@ const initGpuUsageChart = () => {
         color: '#222222',
         fontSize: 14,
         fontFamily: "PingFang SC",
-        fontWeight: 'normal'
+        fontWeight: 'normal',
+        rotate: 0,
+        interval: 0
       }
     },
     yAxis: {
       type: 'value',
       name: '个',
+      minInterval: 1,
       nameTextStyle: {
         color: '#666',
         padding: [0, 0, 0, -20]
@@ -553,7 +557,8 @@ const initGpuUsageChart = () => {
         color: '#666666',
         fontSize: 12,
         fontFamily: "PingFang SC",
-        fontWeight: 'normal'
+        fontWeight: 'normal',
+        formatter: '{value}'
       }
     },
     series: [
@@ -579,7 +584,7 @@ const initGpuUsageChart = () => {
         type: 'pictorialBar',
         silent: true,
         symbolSize: [barWidth, 8],
-        symbolOffset: [-11, -4],
+        symbolOffset: [-symbolOffsetX, -4],
         symbolPosition: 'end',
         z: 22,
         color: '#FFEB0D',
@@ -608,7 +613,7 @@ const initGpuUsageChart = () => {
         type: 'pictorialBar',
         silent: true,
         symbolSize: [barWidth, 8],
-        symbolOffset: [11, -4],
+        symbolOffset: [symbolOffsetX, -4],
         symbolPosition: 'end',
         z: 22,
         color: '#0df3ff',
@@ -783,7 +788,8 @@ const initTrendChart = (chartRef, data, color) => {
         color: '#222222', 
         fontSize: 12,
         fontFamily: 'PingFang SC Medium',
-        fontWeight: 'normal'
+        fontWeight: 'normal',
+        interval: 'auto'
       }
     },
     yAxis: {
@@ -1219,7 +1225,7 @@ const updateTrendCharts = () => {
 
 // 自动刷新定时器
 let dataRefreshTimer = null
-const startAutoRefresh = (interval = 30000) => {
+const startAutoRefresh = (interval = 180000) => {
   dataRefreshTimer = setInterval(async () => {
     await updateTrendData()
   }, interval)

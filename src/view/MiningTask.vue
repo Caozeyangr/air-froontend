@@ -5,7 +5,14 @@
         <!-- 任务列表 -->
         <div class="task-list-content">
           <div v-for="(img, index) in imageList" :key="index" class="task-image-item">
-            <img v-if="img.url" :src="img.url" class="task-image" alt="任务图片" />
+            <el-image
+              v-if="img.url"
+              :src="img.url"
+              class="task-image"
+              :preview-src-list="previewSrcList"
+              :initial-index="index"
+              preview-teleported
+            ></el-image>
             <div v-else class="task-image-placeholder">加载中...</div>
           </div>
         </div>
@@ -51,7 +58,12 @@
     <!-- 底部区域：训练列表 -->
     <div class="mining-task-bottom">
       <div class="training-list-card card">
-        <div class="card-title">训练列表</div>
+        <div class="card-header">
+          <div class="card-title">训练列表</div>
+          <el-tooltip content="新增任务" placement="top">
+            <button class="add-task-btn" @click="handleAddTask">+</button>
+          </el-tooltip>
+        </div>
         <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small"
           :row-class-name="tableRowClassName" @row-click="handleRowClick" :highlight-current-row="true">
           <el-table-column prop="name" label="模型名称" min-width="220" />
@@ -75,24 +87,24 @@
           </el-table-column>
           <el-table-column label="操作" min-width="200" fixed="right">
             <template #default="scope">
-              <div class="operation-icons">
+              <div class="operation-icons" @click.stop>
                 <el-tooltip content="详情" placement="top">
-                  <img :src="Search" class="op-icon" @click="handleSearch(scope.row, 'info')" />
+                  <img :src="Search" class="op-icon" @click.stop="handleSearch(scope.row, 'info')" />
                 </el-tooltip>
                 <el-tooltip content="日志" placement="top">
-                  <img :src="Edit" class="op-icon" @click="handleSearch(scope.row, 'log')" />
+                  <img :src="Edit" class="op-icon" @click.stop="handleSearch(scope.row, 'log')" />
                 </el-tooltip>
                 <el-tooltip content="TensorBoard" placement="top">
-                  <img :src="CopyDocument" class="op-icon" @click="handleSearch(scope.row, 'tensorboard')" />
+                  <img :src="CopyDocument" class="op-icon" @click.stop="handleSearch(scope.row, 'tensorboard')" />
                 </el-tooltip>
                 <el-tooltip content="资源使用量" placement="top">
-                  <img :src="VideoPlay" class="op-icon" @click="handleSearch(scope.row, 'grafana')" />
+                  <img :src="VideoPlay" class="op-icon" @click.stop="handleSearch(scope.row, 'grafana')" />
                 </el-tooltip>
                 <el-tooltip content="发布" placement="top">
-                  <img :src="Document" class="op-icon" @click="handleSearch(scope.row, 'export')" />
+                  <img :src="Document" class="op-icon" @click.stop="handleSearch(scope.row, 'export')" />
                 </el-tooltip>
                 <el-tooltip content="样本编辑" placement="top">
-                  <img :src="InfoFilled" class="op-icon" @click="handleSearch(scope.row, 'editSample')" />
+                  <img :src="InfoFilled" class="op-icon" @click.stop="handleSearch(scope.row, 'editSample')" />
                 </el-tooltip>
                 <!-- 取消任务/再训练任务
                 <el-tooltip :content="scope.row.isPaused ? '恢复' : '暂停'" placement="top">
@@ -100,12 +112,12 @@
                 </el-tooltip> -->
                 <el-tooltip :content="scope.row.status === 0 ? '取消任务' : '再训练任务'" placement="top">
                   <img :src="scope.row.status === 0 ? pause : recover" class="op-icon"
-                    @click="handleSearch(scope.row, scope.row.status === 0 ? 'cancel' : 'resume')" />
+                    @click.stop="handleSearch(scope.row, scope.row.status === 0 ? 'cancel' : 'resume')" />
                 </el-tooltip>
 
 
                 <el-tooltip content="删除" placement="top">
-                  <img :src="Delete" class="op-icon delete" @click="handleSearch(scope.row, 'delete')" />
+                  <img :src="Delete" class="op-icon delete" @click.stop="handleSearch(scope.row, 'delete')" />
                 </el-tooltip>
               </div>
             </template>
@@ -117,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import request from '@/utils/request.js'
 import Search from "@/assets/table/详情.png"
@@ -136,6 +148,9 @@ let messenger = null;
 let callback = null;
 import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
+// 测试用的 API Token（硬编码）
+const TEST_API_TOKEN = 'c6857a62bbc24ef580d96b153837c6e9'
+
 // ========== 模型精度曲线数据 ==========
 const accuracyData = ref({})
 
@@ -151,13 +166,17 @@ const trainingListData = ref([])
 // ========== 图片列表数据 ==========
 const imageList = ref([])
 
+// 预览图片URL列表
+const previewSrcList = computed(() => {
+  return imageList.value.map(item => item.url).filter(Boolean)
+})
+
 // 从真实接口加载数据
 const loadData = async () => {
   try {
-    //const token = getApiToken()
-    const token = 'c6857a62bbc24ef580d96b153837c6e9'
+    // 使用测试用的 API Token
+    const token = TEST_API_TOKEN
 
-    console.log('queryDetectTaskList携带的token:', token)
     if (!token) {
       redirectToLogin('请先登录')
       return
@@ -177,24 +196,18 @@ const loadData = async () => {
       })
     })
     const taskListData = await taskListResponse.json()
-    console.log('任务列表接口返回数据:', taskListData)
 
     trainingListData.value = taskListData.data?.records || []
 
     const firstTask = taskListData.data?.records[0]
-    console.log('firstTask:', firstTask)
 
     if (!firstTask) {
-      console.warn('任务列表为空，无法加载图片')
       return
     }
 
     const taskWithTiles = taskListData.data?.records.find(task => task.id === 36)
-    console.log('任务列表中所有任务的id:', taskListData.data?.records.map(t => t.id))
-    console.log('任务id=36的详细信息:', taskWithTiles)
 
     const sampleSetResultId = taskWithTiles?.sampleSetResultId
-    console.log('任务id=36的sampleSetResultId:', sampleSetResultId)
 
     const dashboardResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/detectTaskDashboard', {
       method: 'POST',
@@ -206,23 +219,17 @@ const loadData = async () => {
         "id": 36
       })
     })
-    console.log('detectTaskDashboard携带的token:', token)
     const dashboardData = await dashboardResponse.json()
-    console.log('挖掘统计信息接口返回数据:', dashboardData)
 
     const sampleTileList = dashboardData.data?.sampleTileList || []
-    console.log('sampleTileList长度:', sampleTileList.length)
-    console.log('sampleTileList内容:', sampleTileList)
 
     if (sampleSetResultId && sampleTileList.length > 0) {
-      console.log('开始加载图片...')
       imageList.value = sampleTileList.map(() => ({ url: '' }))
 
       for (let i = 0; i < sampleTileList.length; i++) {
         const tile = sampleTileList[i]
         const encodedTileId = encodeURIComponent(tile.tileId)
         const imageUrl = `https://ib.cangling.cn:22002/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
-        console.log(`请求图片 ${i + 1}:`, imageUrl)
 
         try {
           const imageResponse = await fetch(imageUrl, {
@@ -236,17 +243,13 @@ const loadData = async () => {
             const blob = await imageResponse.blob()
             const url = URL.createObjectURL(blob)
             imageList.value[i].url = url
-            console.log(`图片 ${i + 1} 加载成功:`, tile.tileId)
           } else {
             const errorText = await imageResponse.text()
-            console.warn(`图片 ${i + 1} 加载失败:`, imageResponse.status, '响应:', errorText)
           }
         } catch (imgError) {
-          console.error(`图片 ${i + 1} 请求异常:`, imgError)
         }
       }
     } else {
-      console.warn('无法加载图片：sampleSetResultId=', sampleSetResultId, 'sampleTileList长度=', sampleTileList.length)
     }
 
     // 映射数据到页面所需的结构
@@ -292,7 +295,35 @@ const loadData = async () => {
       }
     ]
   } catch (error) {
-    console.error('Failed to load data:', error)
+  }
+}
+
+// 只刷新任务列表（用于操作按钮）
+const refreshTaskList = async () => {
+  try {
+    // 使用测试用的 API Token
+    const token = TEST_API_TOKEN
+    if (!token) {
+      redirectToLogin('请先登录')
+      return
+    }
+    const taskListResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/queryDetectTaskList', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': token
+      },
+      body: JSON.stringify({
+        "pager": {
+          "pageSize": 20,
+          "currentPage": 1
+        }
+      })
+    })
+    
+    const taskListData = await taskListResponse.json()
+    trainingListData.value = taskListData.data?.records || []
+  } catch (error) {
   }
 }
 
@@ -786,12 +817,10 @@ const handleRowClick = async (row) => {
           imageList.value[i].url = URL.createObjectURL(blob)
         }
       } catch (error) {
-        console.error('加载图片失败:', error)
       }
     }
   } else {
     imageList.value = []
-    console.warn('该任务没有瓦片数据')
   }
 }
 
@@ -799,6 +828,26 @@ const handleSearch = (row, key) => {
   let data = { "key": key, "taskId": row.id }
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
     console.log(`父页面已响应切换: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
+      // 操作完成后只刷新任务列表
+    refreshTaskList()
+  });
+}
+
+// const handleRecover = (row) => {
+//   const key = row.isPaused ? 'resume' : 'pause'
+//   let data = { "key": key, "taskId": row.id }
+//   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
+//     console.log(`父页面已响应${key}: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
+//     loadData()
+//   });
+// }
+
+const handleAddTask = () => {
+  let data = { "key": "addTask" }
+  messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
+    console.log(`父页面已响应新增任务: {"key":"addTask"}, res: ${res}`);
+    // 操作完成后只刷新任务列表
+    refreshTaskList()
   });
 }
 
@@ -871,6 +920,31 @@ const handleResize = () => {
   background: #fff;
   border: 1px solid #ebeef5;
   height: 100%;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-task-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: #409eff;
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.add-task-btn:hover {
+  background: #66b1ff;
 }
 
 .operation-icons {
@@ -1191,5 +1265,24 @@ const handleResize = () => {
   flex-direction: column;
   justify-content: center;
   margin-top: 43px;
+}
+
+/* 隐藏图片预览的放大和旋转按钮 */
+:deep(.el-image-viewer__actions) {
+  display: none;
+}
+
+/* 确保图片预览遮罩层可以正常点击关闭 */
+:deep(.el-image-viewer) {
+  pointer-events: auto !important;
+}
+
+:deep(.el-image-viewer__wrapper) {
+  pointer-events: auto !important;
+}
+
+:deep(.el-image-viewer__mask) {
+  pointer-events: auto !important;
+  cursor: pointer;
 }
 </style>
