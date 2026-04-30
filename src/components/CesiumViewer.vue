@@ -60,7 +60,11 @@ const TILE_URL = 'https://agri.cangling.cn:22002/api/v1/map3/ce0a07f5ef1062b8c90
 //         })
 //         viewer.imageryLayers.addImageryProvider(imageryProvider)
 
-
+// var imageryProvider = new Cesium.SingleTileImageryProvider({
+//             "url": "https://ndrcc.cangling.cn:22002/api/v1/product/download/1908e882bcd24300a5cff2ad0f01ff55/字体/地球贴图4.png",
+//             id: '1'
+//         })
+//         viewer.imageryLayers.addImageryProvider(imageryProvider)
 
 
 const cesiumWrapRef = ref(null)
@@ -70,8 +74,9 @@ let clickHandler = null
 let postRenderListener = null
 let domClickHandler = null
 
-const BOUNDARY_OFFSET_LON = 0.2
-const BOUNDARY_OFFSET_LAT = -0.95
+//地图 偏移量
+const BOUNDARY_OFFSET_LON = 0.18
+const BOUNDARY_OFFSET_LAT = -1.6
 
 const ORANGE = Cesium.Color.fromCssColorString('#FF9430')
 const BLUE = Cesium.Color.fromCssColorString('#165DFF')
@@ -1535,9 +1540,9 @@ onMounted(async () => {
   // })
 
 const tileImagery = new Cesium.SingleTileImageryProvider({
-    url: 'https://ndrcc.cangling.cn:22002/api/v1/product/download/1908e882bcd24300a5cff2ad0f01ff55/字体/地球贴图3.png',
-    tileWidth: 256,
-    tileHeight: 256
+    url: 'https://ndrcc.cangling.cn:22002/api/v1/product/download/1908e882bcd24300a5cff2ad0f01ff55/字体/地球贴图4.png',
+    tileWidth: 2400,
+    tileHeight: 1200
   })
 
 

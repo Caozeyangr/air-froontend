@@ -54,6 +54,22 @@
       </div>
       <div class="card-user-record">
         <div class="card-title">用户记录</div>
+        <div class="user-record-list">
+          <div class="record-header">
+            <div class="header-item col-username">用户名</div>
+            <div class="header-item col-time">时间</div>
+            <div class="header-item col-status">状态</div>
+            <div class="header-item col-action">操作</div>
+          </div>
+          <div class="record-content">
+            <div v-for="(item, index) in userRecordList" :key="index" class="record-row">
+              <div class="record-item col-username">{{ item.username }}</div>
+              <div class="record-item col-time">{{ item.time }}</div>
+              <div class="record-item col-status">{{ item.status }}</div>
+              <div class="record-item col-action action">{{ item.action }}</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -61,6 +77,15 @@
     <div class="right-section">
       <div class="card-realtime">
         <div class="card-title">实时问题流</div>
+        <div class="realtime-list">
+          <div v-for="(item, index) in realtimeList" :key="index" class="realtime-item">
+            <div class="user-name">{{ item.name }}</div>
+            <div class="question-box">{{ item.question }}</div>
+            <div class="keywords">
+              <span v-for="(keyword, idx) in item.keywords" :key="idx" class="keyword-tag">{{ keyword }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -91,6 +116,45 @@ const CHART_DATA = [233, 0, 0, 333, 543, 546, 765, 444, 225, 664, 775, 886]
 // 收藏模版库数量数据
 const xData = ['解译', '后处理', '预处理', '分析', '统计']
 const barData = [444,333, 666, 462, 377]
+
+// 用户记录数据
+const userRecordList = [
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' },
+  { username: '张三', time: '2026-04-23 15:40:54', status: '已完成', action: 'XXXXXXXX' }
+]
+
+// 实时问题流数据
+const realtimeList = [
+  { name: '张三', question: '我想对东营航飞数据提取风机', keywords: ['解译', '东营'] },
+  { name: '李四', question: '我想对这个矢量量进行后处理', keywords: ['后处理', '矢量'] },
+  { name: '张三', question: '我想对东营航飞数据提取风机', keywords: ['解译', '东营'] },
+  { name: '李四', question: '我想对这个矢量量进行后处理', keywords: ['后处理', '矢量'] },
+  { name: '张三', question: '我想对东营航飞数据提取风机', keywords: ['解译', '东营'] },
+  { name: '李四', question: '我想对这个矢量量进行后处理', keywords: ['后处理', '矢量'] },
+  { name: '张三', question: '我想对东营航飞数据提取风机', keywords: ['解译', '东营'] },
+  { name: '李四', question: '我想对这个矢量量进行后处理', keywords: ['后处理', '矢量'] },
+  { name: '张三', question: '我想对东营航飞数据提取风机', keywords: ['解译', '东营'] },
+  { name: '李四', question: '我想对这个矢量量进行后处理', keywords: ['后处理', '矢量'] },
+  { name: '张三', question: '我想对东营航飞数据提取风机', keywords: ['解译', '东营'] },
+  { name: '李四', question: '我想对这个矢量量进行后处理', keywords: ['后处理', '矢量'] },
+]
 
 // 收藏模板数据
 const templateList = [
@@ -621,7 +685,7 @@ onMounted(() => {
   border: 2px solid #F0F0F0;
   display: flex;
   align-items: center;
-  padding: 0 3px;
+  padding: 6px 3px;
   box-sizing: border-box;
 }
 
@@ -657,5 +721,171 @@ onMounted(() => {
   font-style: normal;
   margin-left: 16px;
   margin-right: 7px;
+}
+
+/* 用户记录列表 */
+.user-record-list {
+  width: 605px;
+  height: 449px;
+  border-radius: 4px 4px 0px 0px;
+  border: 1px solid #F0F0F0;
+  overflow: hidden;
+}
+
+.record-header {
+  width: 605px;
+  height: 40px;
+  background: #F2F2F2;
+  border-radius: 4px 4px 0px 0px;
+  border: 1px solid #F0F0F0;
+  display: flex;
+}
+
+.header-item {
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 600;
+  font-size: 14px;
+  color: #222222;
+  line-height: 41px;
+  text-align: left;
+  font-style: normal;
+  padding-left: 20px;
+  box-sizing: border-box;
+}
+
+.header-item.col-username {
+  width: 120px;
+}
+
+.header-item.col-time {
+  width: 180px;
+}
+
+.header-item.col-status {
+  width: 120px;
+}
+
+.header-item.col-action {
+  width: 185px;
+}
+
+.record-content {
+  overflow-y: auto;
+  max-height: calc(449px - 40px);
+}
+
+.record-row {
+  display: flex;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.record-item {
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 14px;
+  color: #222222;
+  line-height: 41px;
+  text-align: left;
+  font-style: normal;
+  padding-left: 20px;
+  box-sizing: border-box;
+}
+
+.record-item.col-username {
+  width: 120px;
+}
+
+.record-item.col-time {
+  width: 180px;
+}
+
+.record-item.col-status {
+  width: 120px;
+}
+
+.record-item.col-action {
+  width: 185px;
+}
+
+.record-item.action {
+  color: #0083FF;
+}
+
+/* 实时问题流样式 */
+.realtime-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(1017px - 80px);
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+}
+
+.realtime-item {
+  width: 100%;
+  height: 113px;
+  background: linear-gradient(178deg, #E0EDFF 0%, rgba(224, 243, 255, 0) 100%);
+  border-radius: 4px;
+  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #F0F0F0;
+  cursor: pointer;
+}
+
+.realtime-item:hover {
+  border: 1px solid #346FF7;
+}
+
+.user-name {
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 500;
+  font-size: 16px;
+  color: #444444;
+  line-height: 22px;
+  text-align: left;
+  font-style: normal;
+}
+
+.question-box {
+  width: 100%;
+  height: 32px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
+  border-radius: 4px;
+  border: 1px solid #FFFFFF;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 14px;
+  color: #666666;
+  line-height: 32px;
+  text-align: left;
+  font-style: normal;
+  padding-left: 10px;
+  box-sizing: border-box;
+}
+
+.keywords {
+  display: flex;
+  gap: 8px;
+}
+
+.keyword-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 4px;
+  border: 1px solid #FFB420;
+  font-family: PingFangSC, PingFang SC;
+  font-weight: 400;
+  font-size: 12px;
+  color: #FFB420;
+  line-height: 17px;
+  padding: 0 4px;
+  text-align: left;
+  font-style: normal;
+  justify-content: center;
 }
 </style>

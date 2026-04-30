@@ -4,9 +4,9 @@
       <div class="mining-task-left">
         <!-- 任务列表 -->
         <div class="task-list-content">
-          <!-- 示例图片布局：四行七列 -->
-          <div v-for="i in 35" :key="i" class="task-image-item">
-            <img src="/src/assets/miningTask/屏幕截图 2026-04-21 111959.png" class="task-image" alt="任务图片" />
+          <div v-for="(img, index) in imageList" :key="index" class="task-image-item">
+            <img v-if="img.url" :src="img.url" class="task-image" alt="任务图片" />
+            <div v-else class="task-image-placeholder">加载中...</div>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@
     <div class="mining-task-bottom">
       <div class="training-list-card card">
         <div class="card-title">训练列表</div>
-        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small" :row-class-name="tableRowClassName">
+        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small" :row-class-name="tableRowClassName" @row-click="handleRowClick" :highlight-current-row="true">
           <el-table-column prop="name" label="模型名称" min-width="220" />
           <el-table-column prop="templateName" label="模型" min-width="220" />
           <el-table-column prop="progress" label="进度" min-width="220">
@@ -126,8 +126,10 @@ import Document from "@/assets/table/发布.png"
 import InfoFilled from "@/assets/table/样本编辑.png"
 import recover from "@/assets/table/恢复.png"
 import pause from "@/assets/table/暂停.png"
+import start from "@/assets/table/开始@2x.png"
+import stop from "@/assets/table/停止@2x.png"
 import Delete from "@/assets/table/删除.png"
-import miningTaskBg from "@/assets/miningTask/image.png"
+import addtask from "@/assets/table/删除.png"
 let messenger = null;
 import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
@@ -143,10 +145,15 @@ const modelDetailData = ref([])
 // ========== 训练列表数据 ==========
 const trainingListData = ref([])
 
+// ========== 图片列表数据 ==========
+const imageList = ref([])
+
 // 从真实接口加载数据
 const loadData = async () => {
   try {
-    const token = getApiToken()
+    //const token = getApiToken()
+    const token = 'c6857a62bbc24ef580d96b153837c6e9'
+
     console.log('queryDetectTaskList携带的token:', token)
     if (!token) {
       redirectToLogin('请先登录')
@@ -161,18 +168,31 @@ const loadData = async () => {
       },
       body: JSON.stringify({
         "pager": {
-          "pageSize": 2,
+          "pageSize": 20,
           "currentPage": 1
-        },
-        // "total": 17
-
-        
+        }
       })
     })
     const taskListData = await taskListResponse.json()
     console.log('任务列表接口返回数据:', taskListData)
 
-    // 调用挖掘统计信息查询接口
+    trainingListData.value = taskListData.data?.records || []
+
+    const firstTask = taskListData.data?.records[0]
+    console.log('firstTask:', firstTask)
+    
+    if (!firstTask) {
+      console.warn('任务列表为空，无法加载图片')
+      return
+    }
+
+    const taskWithTiles = taskListData.data?.records.find(task => task.id === 36)
+    console.log('任务列表中所有任务的id:', taskListData.data?.records.map(t => t.id))
+    console.log('任务id=36的详细信息:', taskWithTiles)
+    
+    const sampleSetResultId = taskWithTiles?.sampleSetResultId
+    console.log('任务id=36的sampleSetResultId:', sampleSetResultId)
+
     const dashboardResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/detectTaskDashboard', {
       method: 'POST',
       headers: {
@@ -180,28 +200,51 @@ const loadData = async () => {
         'API-TOKEN': token
       },
       body: JSON.stringify({
-        "id": 1
+        "id": 36
       })
     })
     console.log('detectTaskDashboard携带的token:', token)
     const dashboardData = await dashboardResponse.json()
     console.log('挖掘统计信息接口返回数据:', dashboardData)
 
-    trainingListData.value = taskListData.data?.records || []
-
-    // 获取 sampleSetResultId（从挖掘列表第一条记录）
-    const sampleSetResultId = taskListData.data?.records[0]?.sampleSetResultId
-
-    // 获取 sampleTileList（从挖掘统计信息）
     const sampleTileList = dashboardData.data?.sampleTileList || []
+    console.log('sampleTileList长度:', sampleTileList.length)
+    console.log('sampleTileList内容:', sampleTileList)
 
-    // 遍历 sampleTileList，发送图片请求
-    // for (const tile of sampleTileList) {
-    //   const encodedTileId = encodeURIComponent(tile.tileId)
-    //   const imageUrl = `/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
-    //   console.log('发送样本瓦片请求:', imageUrl)
-    //   await request.get(imageUrl)
-    // }
+    if (sampleSetResultId && sampleTileList.length > 0) {
+      console.log('开始加载图片...')
+      imageList.value = sampleTileList.map(() => ({ url: '' }))
+      
+      for (let i = 0; i < sampleTileList.length; i++) {
+        const tile = sampleTileList[i]
+        const encodedTileId = encodeURIComponent(tile.tileId)
+        const imageUrl = `https://ib.cangling.cn:22002/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
+        console.log(`请求图片 ${i + 1}:`, imageUrl)
+        
+        try {
+          const imageResponse = await fetch(imageUrl, {
+            method: 'GET',
+            headers: {
+              'API-TOKEN': token
+            }
+          })
+          
+          if (imageResponse.ok) {
+            const blob = await imageResponse.blob()
+            const url = URL.createObjectURL(blob)
+            imageList.value[i].url = url
+            console.log(`图片 ${i + 1} 加载成功:`, tile.tileId)
+          } else {
+            const errorText = await imageResponse.text()
+            console.warn(`图片 ${i + 1} 加载失败:`, imageResponse.status, '响应:', errorText)
+          }
+        } catch (imgError) {
+          console.error(`图片 ${i + 1} 请求异常:`, imgError)
+        }
+      }
+    } else {
+      console.warn('无法加载图片：sampleSetResultId=', sampleSetResultId, 'sampleTileList长度=', sampleTileList.length)
+    }
 
     // 映射数据到页面所需的结构
     const accuracyMap = dashboardData.data?.accuracyMap || {}
@@ -212,7 +255,7 @@ const loadData = async () => {
       accuracyData.value = {
         series: accuracyKeys.map((key, index) => ({
           name: key,
-          data: (accuracyMap[key] || []).map(val => val * 100),
+          data: (accuracyMap[key] || []),
           color: colors[index % colors.length]
         })),
         xAxis: {
@@ -329,6 +372,36 @@ const initAccuracyChart = () => {
   const series = accuracyData.value.series || []
   const xAxisData = accuracyData.value.xAxis?.data || []
   
+  //这里设置了一下曲线图幅度
+  let allValues = []
+  series.forEach(s => {
+    if (s.data && s.data.length > 0) {
+      allValues = allValues.concat(s.data)
+    }
+  })
+  
+  let yAxisMin = 0
+  let yAxisMax = 100
+  
+  if (allValues.length > 0) {
+    const dataMin = Math.min(...allValues)
+    const dataMax = Math.max(...allValues)
+    const range = dataMax - dataMin
+    const padding = range * 0.1 || 5
+    
+    yAxisMin = Math.max(0, Math.floor((dataMin - padding) / 5) * 5)
+    yAxisMax = Math.min(100, Math.ceil((dataMax + padding) / 5) * 5)
+    
+    if (yAxisMax - yAxisMin < 20) {
+      const mid = (yAxisMax + yAxisMin) / 2
+      yAxisMin = Math.max(0, Math.floor((mid - 10) / 5) * 5)
+      yAxisMax = Math.min(100, Math.ceil((mid + 10) / 5) * 5)
+    }
+  }
+  
+
+
+
   const option = {
     color: series.map(s => s.color),
     grid: {
@@ -368,8 +441,9 @@ const initAccuracyChart = () => {
     },
     yAxis: {
       type: 'value',
-      max: 100,
-      interval: 10,
+      min: yAxisMin,
+      max: yAxisMax,
+      interval: Math.ceil((yAxisMax - yAxisMin) / 5),
       axisLine: { show: false },
       splitLine: { lineStyle: { color: '#DCDCDCFF', type: 'dashed' } },
       axisLabel: {
@@ -594,10 +668,9 @@ const updateTrainingListData = async () => {
     // 调用本地 mock 接口
     const result = await request.post('/api/v1/sampleDetect/task/queryDetectTaskList', {
       "pager": {
-        "pageSize": 2,
+        "pageSize": 20,
         "currentPage": 1
-      },
-      "total": 17,
+      }
     })
     if (result.code !== 200) {
       console.warn('getDashboardStats 错误:', result.message || result.code || '')
@@ -622,6 +695,100 @@ const updateTrainingListData = async () => {
     }
   } catch (e) {
     console.warn('getDashboardStats 请求异常', e)
+  }
+}
+
+const handleRowClick = async (row) => {
+  console.log('点击任务:', row)
+  
+  const token = getApiToken()
+  if (!token) {
+    redirectToLogin('请先登录')
+    return
+  }
+
+  const taskId = row.id
+  const sampleSetResultId = row.sampleSetResultId
+  
+  console.log('切换到任务:', taskId, 'sampleSetResultId:', sampleSetResultId)
+
+  const dashboardResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/detectTaskDashboard', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'API-TOKEN': token
+    },
+    body: JSON.stringify({ "id": taskId })
+  })
+  
+  const dashboardData = await dashboardResponse.json()
+  
+  // 更新精度曲线数据
+  const accuracyMap = dashboardData.data?.accuracyMap || {}
+  const accuracyKeys = Object.keys(accuracyMap)
+  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC']
+  
+  if (accuracyKeys.length > 0) {
+    accuracyData.value = {
+      series: accuracyKeys.map((key, index) => ({
+        name: key,
+        data: (accuracyMap[key] || []),
+        color: colors[index % colors.length]
+      })),
+      xAxis: {
+        data: (accuracyMap[accuracyKeys[0]] || []).map((_, index) => index * 150)
+      }
+    }
+  } else {
+    accuracyData.value = { series: [], xAxis: { data: [] } }
+  }
+  
+  // 更新GPU使用率数据
+  gpuUsageData.value = {
+    cpu: { value: dashboardData.data?.cpuUsage ? dashboardData.data.cpuUsage * 100 : 0 },
+    gpu: { value: dashboardData.data?.gpuUsage ? dashboardData.data.gpuUsage * 100 : 0 }
+  }
+  
+  // 更新模型详情数据
+  modelDetailData.value = [{
+    modelName: dashboardData.data?.taskName || '未命名',
+    creator: dashboardData.data?.createUsername || '未知',
+    bestAccuracy: dashboardData.data?.maxPrecision ? dashboardData.data.maxPrecision * 100 : 0
+  }]
+
+  // 更新图表
+  updateAccuracyData(accuracyData.value)
+  updateGpuUsageData(gpuUsageData.value)
+  updateModelDetailData(modelDetailData.value)
+
+  // 更新图片列表
+  const sampleTileList = dashboardData.data?.sampleTileList || []
+
+  if (sampleSetResultId && sampleTileList.length > 0) {
+    imageList.value = sampleTileList.map(() => ({ url: '' }))
+    
+    for (let i = 0; i < sampleTileList.length; i++) {
+      const tile = sampleTileList[i]
+      const encodedTileId = encodeURIComponent(tile.tileId)
+      const imageUrl = `https://ib.cangling.cn:22002/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
+      
+      try {
+        const imageResponse = await fetch(imageUrl, {
+          method: 'GET',
+          headers: { 'API-TOKEN': token }
+        })
+        
+        if (imageResponse.ok) {
+          const blob = await imageResponse.blob()
+          imageList.value[i].url = URL.createObjectURL(blob)
+        }
+      } catch (error) {
+        console.error('加载图片失败:', error)
+      }
+    }
+  } else {
+    imageList.value = []
+    console.warn('该任务没有瓦片数据')
   }
 }
 
@@ -816,6 +983,17 @@ const handleResize = () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.task-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f7fa;
+  color: #909399;
+  font-size: 12px;
 }
 
 

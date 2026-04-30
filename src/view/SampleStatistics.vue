@@ -105,8 +105,10 @@
       <div class="right-section">
         <!-- 样本关联知识图谱卡片 -->
         <div class="bottom-card card-372">
-          <div class="card-title">样本关联知识图谱</div>
-          <!-- 内容将在此处填充 -->
+          <div class="card-header">
+            <div class="card-title">样本关联知识图谱</div>
+          </div>
+          <div ref="knowledgeGraph" class="knowledge-graph-container"></div>
         </div>
       </div>
     </div>
@@ -492,6 +494,128 @@ const getTrendChartOption = () => {
   }
 }
 
+// ==================== 知识图谱配置 ====================
+const knowledgeGraph = ref(null)
+let knowledgeChart = null
+
+const getKnowledgeGraphOption = () => {
+  const categories = [
+    { name: '核心平台', itemStyle: { color: '#2678ff' } },
+    { name: '应用层', itemStyle: { color: '#722ed1' } },
+    { name: '边缘层', itemStyle: { color: '#13c2c2' } },
+    { name: '算法层', itemStyle: { color: '#2f54eb' } },
+    { name: '硬件层', itemStyle: { color: '#fa8c16' } },
+    { name: '数据层', itemStyle: { color: '#52c41a' } }
+  ]
+
+  const nodes = [
+    { name: '江行IDEA平台', category: 0, symbolSize: 80, label: { fontSize: 14 } },
+    { name: '智慧应用平台', category: 0, symbolSize: 60 },
+    { name: '智能硬件', category: 4, symbolSize: 60 },
+    { name: '算法服务', category: 3, symbolSize: 60 },
+    { name: '边缘计算层', category: 2, symbolSize: 55 },
+    { name: '数据服务', category: 5, symbolSize: 55 },
+    { name: 'JCrome EdgeOS', category: 2, symbolSize: 45 },
+    { name: 'EdgeBoost', category: 2, symbolSize: 45 },
+    { name: 'K3s轻量集群', category: 2, symbolSize: 45 },
+    { name: '传感器采集', category: 4, symbolSize: 45 },
+    { name: '视频分析', category: 1, symbolSize: 45 },
+    { name: '智能预警', category: 1, symbolSize: 45 },
+    { name: '远程控制', category: 1, symbolSize: 45 },
+    { name: '图像识别算法', category: 3, symbolSize: 45 },
+    { name: '目标检测算法', category: 3, symbolSize: 45 },
+    { name: '语义分割算法', category: 3, symbolSize: 45 },
+    { name: '样本数据库', category: 5, symbolSize: 45 },
+    { name: '模型仓库', category: 5, symbolSize: 45 },
+    { name: '温度传感器-01', category: 4, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '湿度传感器-02', category: 4, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '红外摄像头-03', category: 4, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '激光雷达-04', category: 4, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '缺陷检测模型', category: 3, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '目标追踪模型', category: 3, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '场景分割模型', category: 3, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '河流分割样本', category: 5, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '堤坝识别样本', category: 5, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: '水面垃圾样本', category: 5, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: 'YOLO-v8模型', category: 3, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: 'DeepLabV3+模型', category: 3, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } },
+    { name: 'FCN模型文件', category: 3, symbolSize: 0, label: { show: true, position: 'inside', fontSize: 10, color: '#666' } }
+  ]
+
+  const links = [
+    { source: '江行IDEA平台', target: '智慧应用平台' },
+    { source: '江行IDEA平台', target: '智能硬件' },
+    { source: '江行IDEA平台', target: '算法服务' },
+    { source: '江行IDEA平台', target: '边缘计算层' },
+    { source: '江行IDEA平台', target: '数据服务' },
+    { source: '智慧应用平台', target: '视频分析' },
+    { source: '智慧应用平台', target: '智能预警' },
+    { source: '智慧应用平台', target: '远程控制' },
+    { source: '智能硬件', target: '传感器采集' },
+    { source: '智能硬件', target: 'JCrome EdgeOS' },
+    { source: '智能硬件', target: 'EdgeBoost' },
+    { source: '智能硬件', target: 'K3s轻量集群' },
+    { source: '算法服务', target: '图像识别算法' },
+    { source: '算法服务', target: '目标检测算法' },
+    { source: '算法服务', target: '语义分割算法' },
+    { source: '算法服务', target: '模型仓库' },
+    { source: '边缘计算层', target: 'JCrome EdgeOS' },
+    { source: '边缘计算层', target: 'EdgeBoost' },
+    { source: '边缘计算层', target: 'K3s轻量集群' },
+    { source: '数据服务', target: '样本数据库' },
+    { source: '数据服务', target: '模型仓库' },
+    { source: '传感器采集', target: '温度传感器-01' },
+    { source: '传感器采集', target: '湿度传感器-02' },
+    { source: '传感器采集', target: '红外摄像头-03' },
+    { source: '传感器采集', target: '激光雷达-04' },
+    { source: '视频分析', target: '缺陷检测模型' },
+    { source: '视频分析', target: '目标追踪模型' },
+    { source: '视频分析', target: '场景分割模型' },
+    { source: '目标检测算法', target: 'YOLO-v8模型' },
+    { source: '语义分割算法', target: 'DeepLabV3+模型' },
+    { source: '语义分割算法', target: 'FCN模型文件' },
+    { source: '样本数据库', target: '河流分割样本' },
+    { source: '样本数据库', target: '堤坝识别样本' },
+    { source: '样本数据库', target: '水面垃圾样本' }
+  ]
+
+  return {
+    backgroundColor: '#fff',
+    tooltip: {},
+    legend: {
+      data: categories.map(c => c.name),
+      top: 10,
+      textStyle: { color: '#333' }
+    },
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        draggable: true,
+        roam: true,
+        label: {
+          show: true,
+          position: 'inside',
+          fontSize: 12,
+          color: '#fff'
+        },
+        data: nodes,
+        links: links,
+        categories: categories,
+        force: {
+          repulsion: 400,
+          edgeLength: 80,
+          gravity: 0.15
+        },
+        lineStyle: {
+          color: 'source',
+          curveness: 0.2
+        }
+      }
+    ]
+  }
+}
+
 // ==================== 图表挂载 ====================
 const typeDistributionChart = ref(null)
 const quantityDistributionChart = ref(null)
@@ -514,6 +638,13 @@ onMounted(() => {
     const chart = echarts.init(trendChart.value)
     chart.setOption(getTrendChartOption())
     window.addEventListener('resize', () => chart.resize())
+  }
+  
+  // 初始化知识图谱
+  if (knowledgeGraph.value) {
+    knowledgeChart = echarts.init(knowledgeGraph.value)
+    knowledgeChart.setOption(getKnowledgeGraphOption())
+    window.addEventListener('resize', () => knowledgeChart.resize())
   }
 })
 </script>
@@ -681,5 +812,9 @@ onMounted(() => {
   width: 100%;
   height: 281px;
   margin-top: 6px;
+}
+.knowledge-graph-container {
+  width: 100%;
+  height: calc(100% - 50px);
 }
 </style>

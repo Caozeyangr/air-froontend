@@ -208,6 +208,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import request from '@/utils/request.js'
+import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
 import timeCardBg from '../assets/workstation/背景-当前时间@2x.png'
 import resourceApplyBg from '../assets/workstation/背景-资源申请记录@2x.png'
@@ -238,102 +239,232 @@ const updateTime = () => {
 // ========== 资源申请记录数据 ==========
 const resourceApply = ref({})
 
-// 从mock接口加载数据
+// // 从mock接口加载数据
+// const loadData = async () => {
+//   try {
+//     // 调用mock接口
+//     const result = await request.post('/api/v1/workspace/statisticWorkspace', {})
+    
+//     // 映射mock数据到页面所需的数据结构
+//     resourceApply.value = {
+//       totalApply: result.data.totalCreation || 0,
+//       totalCpu: result.data.totalRequestedCpu || 0,
+//       totalMemory: result.data.totalRequestedMemory || 0,
+//       totalStorage: Math.round((result.data.totalRequestedDisk || 0) / 1024) || 0,   // TB换算
+//       totalGpu: result.data.totalRequestedGpu || 0
+//     }
+    
+//     // 根据nodeMetrics计算物理机状态
+//     const nodeMetrics = result.data.nodeMetrics || []
+//     const totalNodes = nodeMetrics.length
+//     const abnormalNodes = nodeMetrics.filter(node => !node.ready).length
+    
+//     physicalStatus.value = {
+//       total: totalNodes,
+//       abnormal: abnormalNodes,
+//       monitorStatus: abnormalNodes === 0 ? 0 : 1
+//     }
+    
+//   resourceAllocation.value = {
+//       cpu: {
+//         total: result.data.cpu || 0,
+//         allocated: result.data.cpuUsage || 0,
+//         usageRate: result.data.cpu > 0 ? Math.round((result.data.cpuUsage / result.data.cpu) * 100) : 0
+//       },
+//       memory: {
+//         total: result.data.memory || 0,
+//         allocated: result.data.memoryUsage || 0,
+//         usageRate: result.data.memory > 0 ? Math.round((result.data.memoryUsage / result.data.memory) * 100) : 0
+//       },
+//       storage: {
+//         // GB换算TB 保留2位小数
+//         total: Number(((result.data.disk || 0) / 1024).toFixed(2)) || 0,
+//         allocated: Number(((result.data.diskUsage || 0) / 1024).toFixed(2)) || 0,
+//         usageRate: result.data.disk > 0 ? Math.round((result.data.diskUsage / result.data.disk) * 100) : 0
+//       },
+//       gpu: {
+//         total: result.data.gpu || 0,
+//         allocated: result.data.gpuUsage || 0,
+//         usageRate: result.data.gpu > 0 ? Math.round((result.data.gpuUsage / result.data.gpu) * 100) : 0
+//       }
+//     }
+    
+//     // 映射workspaces数据到设备GPU使用量表格2
+//     gpuUsageTable2.value = (result.data.workspaces || []).map(item => ({
+//       name: item.userName,
+//       ip: item.ip,
+//       cpu: item.cpu,
+//       gpu: item.gpu,
+//       memory: item.memory,
+//       machineName: item.containerId
+//     }))
+    
+//     // 从nodeMetrics提取设备GPU使用量数据
+//     const categories = nodeMetrics.flatMap(node => node.accelerators.map(acc => acc.resourceName))
+//     const requestedList = nodeMetrics.flatMap(node =>
+//       node.accelerators.map(acc => acc.requested || 0)
+//     )
+//     const allocatableList = nodeMetrics.flatMap(node =>
+//       node.accelerators.map(acc => acc.allocatable || 0)
+//     )
+//     gpuUsageData.value = {
+//       categories,
+//       data1: requestedList,
+//       data3: allocatableList
+//     }
+//     // 从mock接口获取 gpuUsageTable1 和 trendData
+//     gpuUsageTable1.value = result.data.gpuUsageTable1 || []
+//     cpuTrendData.value = result.data.trendData?.cpu || {}
+//     memoryTrendData.value = result.data.trendData?.memory || {}
+//     storageTrendData.value = result.data.trendData?.storage || {}
+//     gpuTrendData.value = result.data.trendData?.gpu || {}
+    
+//     // const response = await fetch('/Workstation.json')
+//     // const data = await response.json()
+//     // resourceApply.value = data.resourceApply
+//     // physicalStatus.value = data.physicalStatus
+//     // resourceAllocation.value = data.resourceAllocation
+//     // gpuUsageData.value = data.gpuUsageData
+//     // gpuUsageTable1.value = data.gpuUsageTable1
+//     // gpuUsageTable2.value = data.gpuUsageTable2
+    
+//     // 加载折线图数据
+//     // if (data.trendData) {
+//     //   cpuTrendData.value = data.trendData.cpu 
+//     //   memoryTrendData.value = data.trendData.memory 
+//     //   storageTrendData.value = data.trendData.storage 
+//     //   gpuTrendData.value = data.trendData.gpu 
+//     // }
+//   } catch (error) {
+//     console.error('Failed to load data:', error)
+//   }
+// }
+
+// 从//  https://ib.cangling.cn:22002/api/v1/workspace/workspaceDashboard   接口加载数据
 const loadData = async () => {
   try {
-    // 调用mock接口
-    const result = await request.post('/api/v1/workspace/statisticWorkspace', {})
-    
-    // 映射mock数据到页面所需的数据结构
-    resourceApply.value = {
-      totalApply: result.data.totalCreation || 0,
-      totalCpu: result.data.totalRequestedCpu || 0,
-      totalMemory: result.data.totalRequestedMemory || 0,
-      totalStorage: Math.round((result.data.totalRequestedDisk || 0) / 1024) || 0,   // TB换算
-      totalGpu: result.data.totalRequestedGpu || 0
+    const token = getApiToken()
+    if (!token) {
+      redirectToLogin('请先登录')
+      return
     }
-    
-    // 根据nodeMetrics计算物理机状态
-    const nodeMetrics = result.data.nodeMetrics || []
-    const totalNodes = nodeMetrics.length
-    const abnormalNodes = nodeMetrics.filter(node => !node.ready).length
-    
-    physicalStatus.value = {
-      total: totalNodes,
-      abnormal: abnormalNodes,
-      monitorStatus: abnormalNodes === 0 ? 0 : 1
-    }
-    
-  resourceAllocation.value = {
-      cpu: {
-        total: result.data.cpu || 0,
-        allocated: result.data.cpuUsage || 0,
-        usageRate: result.data.cpu > 0 ? Math.round((result.data.cpuUsage / result.data.cpu) * 100) : 0
+    const response = await fetch('https://ib.cangling.cn:22002/api/v1/workspace/workspaceDashboard', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-TOKEN': token
       },
-      memory: {
-        total: result.data.memory || 0,
-        allocated: result.data.memoryUsage || 0,
-        usageRate: result.data.memory > 0 ? Math.round((result.data.memoryUsage / result.data.memory) * 100) : 0
-      },
-      storage: {
-        // GB换算TB 保留2位小数
-        total: Number(((result.data.disk || 0) / 1024).toFixed(2)) || 0,
-        allocated: Number(((result.data.diskUsage || 0) / 1024).toFixed(2)) || 0,
-        usageRate: result.data.disk > 0 ? Math.round((result.data.diskUsage / result.data.disk) * 100) : 0
-      },
-      gpu: {
-        total: result.data.gpu || 0,
-        allocated: result.data.gpuUsage || 0,
-        usageRate: result.data.gpu > 0 ? Math.round((result.data.gpuUsage / result.data.gpu) * 100) : 0
+      body: JSON.stringify({})
+    })
+    const result = await response.json()
+    console.log('workspaceDashboard接口返回数据:', result)
+    
+    if (result.code === 200 && result.data) {
+      const data = result.data
+      
+      // 资源申请记录 - 从 cumulativeResourceUsage 获取
+      const cumulative = data.cumulativeResourceUsage || {}
+      resourceApply.value = {
+        totalApply: cumulative.applyCount || 0,
+        totalCpu: cumulative.cpuInCores || Math.round((cumulative.cpu || 0) / 1000) || 0,
+        totalMemory: cumulative.memory || 0,
+        totalStorage: cumulative.storage || Math.round((cumulative.diskRequested || 0) / 1024) || 0,
+        totalGpu: cumulative.gpu || 0
       }
+      
+      // 物理机状态 - 通过遍历nodeMetrics中的ready计算
+      const nodeMetrics = data.nodeMetrics || []
+      const totalNodes = nodeMetrics.length
+      const abnormalNodes = nodeMetrics.filter(node => !node.ready).length
+      physicalStatus.value = {
+        total: totalNodes,
+        abnormal: abnormalNodes,
+        monitorStatus: abnormalNodes === 0 ? 0 : 1
+      }
+      
+      // 资源分配统计
+      resourceAllocation.value = {
+        cpu: {
+          total: data.cpu || 0,
+          allocated: data.cpuRequested || 0,
+          usageRate: data.cpu > 0 ? Math.round((data.cpuRequested / data.cpu) * 100) : 0
+        },
+        memory: {
+          total: Number(data.memory?.toFixed(2)) || 0,
+          allocated: Number(data.memoryRequested?.toFixed(2)) || 0,
+          usageRate: data.memory > 0 ? Math.round((data.memoryRequested / data.memory) * 100) : 0
+        },
+        storage: {
+          total: Number(((data.disk || 0) / 1024).toFixed(2)) || 0,
+          allocated: Number(((data.diskRequested || 0) / 1024).toFixed(2)) || 0,
+          usageRate: data.disk > 0 ? Math.round((data.diskRequested / data.disk) * 100) : 0
+        },
+        gpu: {
+          total: data.gpu || 0,
+          allocated: data.gpuRequested || 0,
+          usageRate: data.gpu > 0 ? Math.round((data.gpuRequested / data.gpu) * 100) : 0
+        }
+      }
+      
+      // 设备GPU使用量表格1 - 从userCumulativeUsageList获取
+      gpuUsageTable1.value = (data.userCumulativeUsageList || []).map(item => ({
+        name: item.username || item.userName || '-',
+        applyCount: item.applyCount || 0,
+        auditCount: 0,
+        runCount: 0
+      }))
+      
+      // 设备GPU使用量表格2 - 从workspaces获取
+      gpuUsageTable2.value = (data.workspaces || []).map(item => ({
+        name: item.userName || '-',
+        ip: item.ip || '-',
+        cpu: item.cpuInCores || Math.round((item.cpu || 0) / 1000) || 0,
+        gpu: item.gpu || 0,
+        memory: item.memory || 0,
+        machineName: item.machineName || item.containerId || '-'
+      }))
+      
+      // GPU使用量图表数据 - 从nodeMetrics中的accelerators统计
+      const categories = nodeMetrics.flatMap(node => 
+        node.accelerators.map(acc => acc.resourceName)
+      )
+      const requestedList = nodeMetrics.flatMap(node =>
+        node.accelerators.map(acc => acc.requested || 0)
+      )
+      const allocatableList = nodeMetrics.flatMap(node =>
+        node.accelerators.map(acc => acc.allocatable || 0)
+      )
+      gpuUsageData.value = {
+        categories: categories.length > 0 ? categories : ['暂无数据'],
+        data1: requestedList.length > 0 ? requestedList : [0],
+        data3: allocatableList.length > 0 ? allocatableList : [0]
+      }
+      
+      // 资源使用率趋势数据 - 从resourceUsage获取
+      const resourceUsage = data.resourceUsage || {}
+      const generateTrendData = (usageData) => {
+        if (!usageData || !usageData.timestamp || !usageData.value) {
+          const times = []
+          const data = []
+          const now = new Date()
+          for (let i = 0; i < 10; i++) {
+            const t = new Date(now.getTime() - (9 - i) * 60000)
+            times.push(t.toTimeString().slice(0, 5))
+            data.push(Math.floor(Math.random() * 40) + 40)
+          }
+          return { times, data }
+        }
+        return {
+          times: usageData.timestamp || [],
+          data: usageData.value || []
+        }
+      }
+      
+      cpuTrendData.value = generateTrendData(resourceUsage.cpu)
+      memoryTrendData.value = generateTrendData(resourceUsage.memory)
+      storageTrendData.value = generateTrendData(resourceUsage.storage)
+      gpuTrendData.value = generateTrendData(resourceUsage.gpu)
     }
-    
-    // 映射workspaces数据到设备GPU使用量表格2
-    gpuUsageTable2.value = (result.data.workspaces || []).map(item => ({
-      name: item.userName,
-      ip: item.ip,
-      cpu: item.cpu,
-      gpu: item.gpu,
-      memory: item.memory,
-      machineName: item.containerId
-    }))
-    
-    // 从nodeMetrics提取设备GPU使用量数据
-    const categories = nodeMetrics.flatMap(node => node.accelerators.map(acc => acc.resourceName))
-    const requestedList = nodeMetrics.flatMap(node =>
-      node.accelerators.map(acc => acc.requested || 0)
-    )
-    const allocatableList = nodeMetrics.flatMap(node =>
-      node.accelerators.map(acc => acc.allocatable || 0)
-    )
-    gpuUsageData.value = {
-      categories,
-      data1: requestedList,
-      data3: allocatableList
-    }
-    // 从mock接口获取 gpuUsageTable1 和 trendData
-    gpuUsageTable1.value = result.data.gpuUsageTable1 || []
-    cpuTrendData.value = result.data.trendData?.cpu || {}
-    memoryTrendData.value = result.data.trendData?.memory || {}
-    storageTrendData.value = result.data.trendData?.storage || {}
-    gpuTrendData.value = result.data.trendData?.gpu || {}
-    
-    // const response = await fetch('/Workstation.json')
-    // const data = await response.json()
-    // resourceApply.value = data.resourceApply
-    // physicalStatus.value = data.physicalStatus
-    // resourceAllocation.value = data.resourceAllocation
-    // gpuUsageData.value = data.gpuUsageData
-    // gpuUsageTable1.value = data.gpuUsageTable1
-    // gpuUsageTable2.value = data.gpuUsageTable2
-    
-    // 加载折线图数据
-    // if (data.trendData) {
-    //   cpuTrendData.value = data.trendData.cpu 
-    //   memoryTrendData.value = data.trendData.memory 
-    //   storageTrendData.value = data.trendData.storage 
-    //   gpuTrendData.value = data.trendData.gpu 
-    // }
   } catch (error) {
     console.error('Failed to load data:', error)
   }
@@ -1320,7 +1451,7 @@ const handleResize = () => {
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 14px;
   color: #999;
   margin-bottom: 4px;
 }
@@ -1351,7 +1482,7 @@ const handleResize = () => {
 }
 
 .phys-label {
-  font-size: 12px;
+  font-size: 14px;
   color: #999;
   margin-bottom: 4px;
 }
