@@ -52,7 +52,8 @@
     <div class="mining-task-bottom">
       <div class="training-list-card card">
         <div class="card-title">训练列表</div>
-        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small" :row-class-name="tableRowClassName" @row-click="handleRowClick" :highlight-current-row="true">
+        <el-table :data="trainingListData" style="width: 100%; height: calc(100% - 40px)" size="small"
+          :row-class-name="tableRowClassName" @row-click="handleRowClick" :highlight-current-row="true">
           <el-table-column prop="name" label="模型名称" min-width="220" />
           <el-table-column prop="templateName" label="模型" min-width="220" />
           <el-table-column prop="progress" label="进度" min-width="220">
@@ -76,34 +77,35 @@
             <template #default="scope">
               <div class="operation-icons">
                 <el-tooltip content="详情" placement="top">
-                  <img :src="Search" class="op-icon" @click="handleSearch(scope.row)" />
+                  <img :src="Search" class="op-icon" @click="handleSearch(scope.row, 'info')" />
                 </el-tooltip>
                 <el-tooltip content="日志" placement="top">
-                  <img :src="Edit" class="op-icon" @click="handleEdit(scope.row)" />
+                  <img :src="Edit" class="op-icon" @click="handleSearch(scope.row, 'log')" />
                 </el-tooltip>
                 <el-tooltip content="TensorBoard" placement="top">
-                  <img :src="CopyDocument" class="op-icon" @click="handleCopy(scope.row)" />
+                  <img :src="CopyDocument" class="op-icon" @click="handleSearch(scope.row, 'tensorboard')" />
                 </el-tooltip>
-                <el-tooltip content="监控" placement="top">
-                  <img :src="VideoPlay" class="op-icon" @click="handlePlay(scope.row)" />
+                <el-tooltip content="资源使用量" placement="top">
+                  <img :src="VideoPlay" class="op-icon" @click="handleSearch(scope.row, 'grafana')" />
                 </el-tooltip>
                 <el-tooltip content="发布" placement="top">
-                  <img :src="Document" class="op-icon" @click="handleDocument(scope.row)" />
+                  <img :src="Document" class="op-icon" @click="handleSearch(scope.row, 'export')" />
                 </el-tooltip>
                 <el-tooltip content="样本编辑" placement="top">
-                  <img :src="InfoFilled" class="op-icon" @click="handleInfo(scope.row)" />
+                  <img :src="InfoFilled" class="op-icon" @click="handleSearch(scope.row, 'editSample')" />
                 </el-tooltip>
                 <!-- 取消任务/再训练任务
                 <el-tooltip :content="scope.row.isPaused ? '恢复' : '暂停'" placement="top">
                   <img :src="scope.row.isPaused ? pause : recover" class="op-icon" @click="handleRecover(scope.row)" />
                 </el-tooltip> -->
                 <el-tooltip :content="scope.row.status === 0 ? '取消任务' : '再训练任务'" placement="top">
-                  <img :src="scope.row.status === 0 ? pause : recover" class="op-icon" @click="handleRecover(scope.row)" />
+                  <img :src="scope.row.status === 0 ? pause : recover" class="op-icon"
+                    @click="handleSearch(scope.row, scope.row.status === 0 ? 'cancel' : 'resume')" />
                 </el-tooltip>
-                
-                
+
+
                 <el-tooltip content="删除" placement="top">
-                  <img :src="Delete" class="op-icon delete" @click="handleDelete(scope.row)" />
+                  <img :src="Delete" class="op-icon delete" @click="handleSearch(scope.row, 'delete')" />
                 </el-tooltip>
               </div>
             </template>
@@ -131,6 +133,7 @@ import stop from "@/assets/table/停止@2x.png"
 import Delete from "@/assets/table/删除.png"
 import addtask from "@/assets/table/删除.png"
 let messenger = null;
+let callback = null;
 import { getApiToken, redirectToLogin } from '../utils/authToken.js'
 
 // ========== 模型精度曲线数据 ==========
@@ -180,7 +183,7 @@ const loadData = async () => {
 
     const firstTask = taskListData.data?.records[0]
     console.log('firstTask:', firstTask)
-    
+
     if (!firstTask) {
       console.warn('任务列表为空，无法加载图片')
       return
@@ -189,7 +192,7 @@ const loadData = async () => {
     const taskWithTiles = taskListData.data?.records.find(task => task.id === 36)
     console.log('任务列表中所有任务的id:', taskListData.data?.records.map(t => t.id))
     console.log('任务id=36的详细信息:', taskWithTiles)
-    
+
     const sampleSetResultId = taskWithTiles?.sampleSetResultId
     console.log('任务id=36的sampleSetResultId:', sampleSetResultId)
 
@@ -214,13 +217,13 @@ const loadData = async () => {
     if (sampleSetResultId && sampleTileList.length > 0) {
       console.log('开始加载图片...')
       imageList.value = sampleTileList.map(() => ({ url: '' }))
-      
+
       for (let i = 0; i < sampleTileList.length; i++) {
         const tile = sampleTileList[i]
         const encodedTileId = encodeURIComponent(tile.tileId)
         const imageUrl = `https://ib.cangling.cn:22002/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
         console.log(`请求图片 ${i + 1}:`, imageUrl)
-        
+
         try {
           const imageResponse = await fetch(imageUrl, {
             method: 'GET',
@@ -228,7 +231,7 @@ const loadData = async () => {
               'API-TOKEN': token
             }
           })
-          
+
           if (imageResponse.ok) {
             const blob = await imageResponse.blob()
             const url = URL.createObjectURL(blob)
@@ -250,7 +253,7 @@ const loadData = async () => {
     const accuracyMap = dashboardData.data?.accuracyMap || {}
     const accuracyKeys = Object.keys(accuracyMap)
     const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC']
-    
+
     if (accuracyKeys.length > 0) {
       accuracyData.value = {
         series: accuracyKeys.map((key, index) => ({
@@ -271,7 +274,7 @@ const loadData = async () => {
         }
       }
     }
-    
+
     gpuUsageData.value = {
       cpu: {
         value: dashboardData.data?.cpuUsage ? dashboardData.data.cpuUsage * 100 : 0
@@ -280,7 +283,7 @@ const loadData = async () => {
         value: dashboardData.data?.gpuUsage ? dashboardData.data.gpuUsage * 100 : 0
       }
     }
-    
+
     modelDetailData.value = [
       {
         modelName: dashboardData.data?.taskName || '未命名',
@@ -371,7 +374,7 @@ const initAccuracyChart = () => {
   const chart = echarts.init(accuracyChart.value)
   const series = accuracyData.value.series || []
   const xAxisData = accuracyData.value.xAxis?.data || []
-  
+
   //这里设置了一下曲线图幅度
   let allValues = []
   series.forEach(s => {
@@ -379,26 +382,26 @@ const initAccuracyChart = () => {
       allValues = allValues.concat(s.data)
     }
   })
-  
+
   let yAxisMin = 0
   let yAxisMax = 100
-  
+
   if (allValues.length > 0) {
     const dataMin = Math.min(...allValues)
     const dataMax = Math.max(...allValues)
     const range = dataMax - dataMin
     const padding = range * 0.1 || 5
-    
+
     yAxisMin = Math.max(0, Math.floor((dataMin - padding) / 5) * 5)
     yAxisMax = Math.min(100, Math.ceil((dataMax + padding) / 5) * 5)
-    
+
     if (yAxisMax - yAxisMin < 20) {
       const mid = (yAxisMax + yAxisMin) / 2
       yAxisMin = Math.max(0, Math.floor((mid - 10) / 5) * 5)
       yAxisMax = Math.min(100, Math.ceil((mid + 10) / 5) * 5)
     }
   }
-  
+
 
 
 
@@ -700,7 +703,7 @@ const updateTrainingListData = async () => {
 
 const handleRowClick = async (row) => {
   console.log('点击任务:', row)
-  
+
   const token = getApiToken()
   if (!token) {
     redirectToLogin('请先登录')
@@ -709,7 +712,7 @@ const handleRowClick = async (row) => {
 
   const taskId = row.id
   const sampleSetResultId = row.sampleSetResultId
-  
+
   console.log('切换到任务:', taskId, 'sampleSetResultId:', sampleSetResultId)
 
   const dashboardResponse = await fetch('https://ib.cangling.cn:22002/api/v1/sampleDetect/task/detectTaskDashboard', {
@@ -720,14 +723,14 @@ const handleRowClick = async (row) => {
     },
     body: JSON.stringify({ "id": taskId })
   })
-  
+
   const dashboardData = await dashboardResponse.json()
-  
+
   // 更新精度曲线数据
   const accuracyMap = dashboardData.data?.accuracyMap || {}
   const accuracyKeys = Object.keys(accuracyMap)
   const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC']
-  
+
   if (accuracyKeys.length > 0) {
     accuracyData.value = {
       series: accuracyKeys.map((key, index) => ({
@@ -742,13 +745,13 @@ const handleRowClick = async (row) => {
   } else {
     accuracyData.value = { series: [], xAxis: { data: [] } }
   }
-  
+
   // 更新GPU使用率数据
   gpuUsageData.value = {
     cpu: { value: dashboardData.data?.cpuUsage ? dashboardData.data.cpuUsage * 100 : 0 },
     gpu: { value: dashboardData.data?.gpuUsage ? dashboardData.data.gpuUsage * 100 : 0 }
   }
-  
+
   // 更新模型详情数据
   modelDetailData.value = [{
     modelName: dashboardData.data?.taskName || '未命名',
@@ -766,18 +769,18 @@ const handleRowClick = async (row) => {
 
   if (sampleSetResultId && sampleTileList.length > 0) {
     imageList.value = sampleTileList.map(() => ({ url: '' }))
-    
+
     for (let i = 0; i < sampleTileList.length; i++) {
       const tile = sampleTileList[i]
       const encodedTileId = encodeURIComponent(tile.tileId)
       const imageUrl = `https://ib.cangling.cn:22002/api/v1/map3/sample/thumbnail.webp?sample=${sampleSetResultId}&id=${encodedTileId}&version=0`
-      
+
       try {
         const imageResponse = await fetch(imageUrl, {
           method: 'GET',
           headers: { 'API-TOKEN': token }
         })
-        
+
         if (imageResponse.ok) {
           const blob = await imageResponse.blob()
           imageList.value[i].url = URL.createObjectURL(blob)
@@ -792,67 +795,13 @@ const handleRowClick = async (row) => {
   }
 }
 
-const handleSearch = (row) => {
-  console.log('查看详情', row)
-  let data = { "key": "info", "taskId": row.id }
+const handleSearch = (row, key) => {
+  let data = { "key": key, "taskId": row.id }
   messenger.send('IFRAME_BUTTON', JSON.stringify(data), (res) => {
-    console.log(`父页面已响应切换: {"key":"info","taskId": ${row.id}}, res: ${res}`);
+    console.log(`父页面已响应切换: {"key":"${key}","taskId": ${row.id}}, res: ${res}`);
   });
 }
 
-const handleEdit = (row) => {
-  console.log('日志', row)
-  messenger.send('IFRAME_BUTTON', { "key": "log", "taskId": row.id }, (res) => {
-    console.log(`父页面已响应切换: {"key":"log","taskId": ${row.id}}, res: ${res}`);
-  });
-}
-
-const handleCopy = (row) => {
-  console.log('tensorboard', row)
-  messenger.send('IFRAME_BUTTON', { "key": "tensorboard", "taskId": row.id }, (res) => {
-    console.log(`父页面已响应切换: {"key":"tensorboard","taskId": ${row.id}}, res: ${res}`);
-  });
-}
-
-const handlePlay = (row) => {
-  console.log('监控', row)
-  // 打开资源使用量
-  messenger.send('IFRAME_BUTTON', { "key": "monitor", "taskId": row.id }, (res) => {
-    console.log(`父页面已响应切换: {"key":"monitor","taskId": ${row.id}}, res: ${res}`);
-  });
-}
-
-const handleDocument = (row) => {
-  console.log('发布', row)
-  messenger.send('IFRAME_BUTTON', { "key": "export", "taskId": row.id }, (res) => {
-    console.log(`父页面已响应切换: {"key":"export","taskId": ${row.id}}, res: ${res}`);
-  });
-}
-
-const handleInfo = (row) => {
-  console.log('样本编辑', row)
-  messenger.send('IFRAME_BUTTON', { "key": "export", "taskId": row.id }, (res) => {
-    console.log(`父页面已响应切换: {"key":"export","taskId": ${row.id}}, res: ${res}`);
-  });
-}
-
-const handleDelete = (row) => {
-  console.log('删除', row)
-}
-
-const handleRecover = (row) => {
-  // console.log('恢复/暂停', row)
-  // row.isPaused = !row.isPaused
-
-   if (row.status === 0) {
-    console.log('取消任务', row)
-    // 取消任务
-  } else {
-    console.log('再训练任务', row)
-    // 再训练任务
-  }
-
-}
 
 // 暴露方法给父组件
 // defineExpose({
@@ -877,11 +826,18 @@ onMounted(async () => {
     targetWindow: window.parent,
     targetOrigin: '*'
   });
+   callback = (data) => {
+    // addLog(`收到父页面刷新通知`, 'success');
+    loadData()
+  }
+  messenger.on('IFRAME_RELOAD', callback);
+
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  charts.forEach(chart => chart.dispose())
+  charts.forEach(chart => chart.dispose());
+  messenger.off('IFRAME_RELOAD', callback);
 })
 
 const handleResize = () => {
