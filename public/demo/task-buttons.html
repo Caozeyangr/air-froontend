@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务管理按钮面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        h2 {
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 按钮颜色区分 */
+        .btn-primary { background: #4096ff; }
+        .btn-primary:hover { background: #1677ff; }
+        
+        .btn-success { background: #52c41a; }
+        .btn-success:hover { background: #389e0d; }
+        
+        .btn-warning { background: #faad14; }
+        .btn-warning:hover { background: #d48806; }
+        
+        .btn-danger { background: #ff4d4f; }
+        .btn-danger:hover { background: #cf1322; }
+        
+        .btn-info { background: #13c2c2; }
+        .btn-info:hover { background: #08979c; }
+        
+        .btn-purple { background: #722ed1; }
+        .btn-purple:hover { background: #531dab; }
+        
+        .log-panel {
+            background: #1e1e1e;
+            color: #4ec9b0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        
+        .log-entry {
+            margin-bottom: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .log-time {
+            color: #858585;
+            margin-right: 8px;
+        }
+        
+        .log-success { color: #7ee787; }
+        .log-error { color: #ff7b72; }
+        .log-info { color: #79c0ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>任务管理操作面板</h2>
+        
+        <div class="button-grid">
+            <button class="btn btn-success" onclick="sendAddTaskAction('addTask')">新建任务</button>
+            <button class="btn btn-primary" onclick="sendTaskAction('info')">打开详情</button>
+            <button class="btn btn-info" onclick="sendTaskAction('log')">打开日志</button>
+            <button class="btn btn-purple" onclick="sendTaskAction('tensorboard')">打开 Tensorboard</button>
+            <button class="btn btn-info" onclick="sendTaskAction('grafana')">打开资源使用量</button>
+            <button class="btn btn-primary" onclick="sendTaskAction('export')">打开导出</button>
+            <button class="btn btn-warning" onclick="sendTaskAction('editSample')">打开编辑样本</button>
+            <button class="btn btn-success" onclick="sendTaskAction('resume')">再训练任务</button>
+            <button class="btn btn-warning" onclick="sendTaskAction('cancel')">取消任务</button>
+            <button class="btn btn-danger" onclick="sendTaskAction('delete')">删除任务</button>
+        </div>
+        
+        <div class="log-panel" id="logPanel">
+            <div class="log-entry"><span class="log-time">[系统]</span>页面加载完成，SafeMessenger 已初始化</div>
+        </div>
+    </div>
+
+    <script src="SafeMessenger.js"></script>
+    <script>
+        // 初始化 SafeMessenger，目标为父窗口
+        const messenger = new SafeMessenger({
+            targetWindow: window.parent,
+            targetOrigin: '*',
+            ackTimeout: 1500,
+            maxRetries: 3
+        });
+
+        const logPanel = document.getElementById('logPanel');
+
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            let colorClass = 'log-info';
+            if (type === 'success') colorClass = 'log-success';
+            if (type === 'error') colorClass = 'log-error';
+            
+            entry.innerHTML = `<span class="log-time">[${time}]</span><span class="${colorClass}">${message}</span>`;
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        messenger.on('IFRAME_RELOAD', (data) => {
+            addLog(`收到父页面刷新通知`, 'success');
+        });
+
+        function sendTaskAction(key) {
+            const taskId = 13;
+            const messageData = {
+                key: key,
+                taskId: taskId
+            };
+
+            addLog(`发送消息 [${key}] taskId=${taskId}...`);
+
+            messenger.send(
+                'IFRAME_BUTTON',
+                JSON.stringify(messageData),
+                (res) => {
+                    addLog(`✅ 消息发送成功: ${key} (ID: ${res.id})`, 'success');
+                },
+                (err) => {
+                    addLog(`❌ 消息发送失败: ${key} - ${err.error}`, 'error');
+                }
+            );
+        }
+
+        function sendAddTaskAction(key) {
+            const taskId = 1;
+            const messageData = {
+                key: key
+            };
+
+            addLog(`发送消息 [${key}] `);
+
+            messenger.send(
+                'IFRAME_BUTTON',
+                JSON.stringify(messageData),
+                (res) => {
+                    addLog(`✅ 消息发送成功: ${key} (ID: ${res.id})`, 'success');
+                },
+                (err) => {
+                    addLog(`❌ 消息发送失败: ${key} - ${err.error}`, 'error');
+                }
+            );
+        }
+    </script>
+</body>
