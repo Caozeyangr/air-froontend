@@ -7,14 +7,14 @@
         <div class="stat-card">
           <div class="stat-content">
             <div class="stat-label">总对话</div>
-            <div class="stat-value">25,431</div>
+            <div class="stat-value">{{ formatNumber(STATISTICS_DATA.totalDialog) }}</div>
           </div>
           <div class="stat-chart" ref="chartTotal"></div>
         </div>
         <div class="stat-card">
           <div class="stat-content">
             <div class="stat-label">实时用户</div>
-            <div class="stat-value">33</div>
+            <div class="stat-value">{{ formatNumber(STATISTICS_DATA.realtimeUsers) }}</div>
           </div>
           <div class="stat-chart" ref="chartRealtime"></div>
         </div>
@@ -34,7 +34,7 @@
       <div class="row-bottom">
         <div class="content-card card-template">
           <div class="card-title">收藏模版对话框</div>
-          <div class="template-list">
+          <div class="template-list scrollable-list">
             <div v-for="(item, index) in templateList" :key="index" class="template-item">
               <img :src="listTop" class="template-icon" />
               <el-tooltip :disabled="!isTextOverflow(item.name, 30)" :content="item.name" placement="top">
@@ -51,6 +51,7 @@
     <div class="middle-section">
       <div class="card-knowledge">
         <div class="card-title">核心问题 & 知识图谱</div>
+        <div ref="knowledgeGraphRef" class="knowledge-graph-container"></div>
       </div>
       <div class="card-user-record">
         <div class="card-title">用户记录</div>
@@ -61,7 +62,7 @@
             <div class="header-item col-status">状态</div>
             <div class="header-item col-action">操作</div>
           </div>
-          <div class="record-content">
+          <div class="record-content scrollable-list">
             <div v-for="(item, index) in userRecordList" :key="index" class="record-row">
               <div class="record-item col-username">{{ item.username }}</div>
               <div class="record-item col-time">{{ item.time }}</div>
@@ -77,7 +78,7 @@
     <div class="right-section">
       <div class="card-realtime">
         <div class="card-title">实时问题流</div>
-        <div class="realtime-list">
+        <div class="realtime-list scrollable-list">
           <div v-for="(item, index) in realtimeList" :key="index" class="realtime-item">
             <div class="user-name">{{ item.name }}</div>
             <div class="question-box">{{ item.question }}</div>
@@ -92,15 +93,60 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import listTop from '@/assets/sampleStatistics/list-top.png'
 
+// 滚动条显示控制
+let scrollTimer = null
+const handleScroll = (e) => {
+  const target = e.target
+  target.classList.add('show-scrollbar')
+  if (scrollTimer) clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(() => {
+    target.classList.remove('show-scrollbar')
+  }, 1500)
+}
+
+const scrollableLists = ref([])
+
+const initScrollableLists = () => {
+  scrollableLists.value = document.querySelectorAll('.scrollable-list')
+  scrollableLists.value.forEach(list => {
+    list.addEventListener('scroll', handleScroll)
+  })
+}
+
+onUnmounted(() => {
+  if (scrollTimer) clearTimeout(scrollTimer)
+  scrollableLists.value.forEach(list => {
+    list.removeEventListener('scroll', handleScroll)
+  })
+})
+
 // 图表容器引用
-const chartTotal = ref(null)        // 总对话趋势图
-const chartRealtime = ref(null)     // 实时用户柱状图
-const chartContainer = ref(null)    // 收藏模版库数量柱状图
-const chartKnowledge = ref(null)    // 各类知识库调用数量饼图
+const chartTotal = ref(null)            // 总对话趋势图
+const chartRealtime = ref(null)         // 实时用户柱状图
+const chartContainer = ref(null)        // 收藏模版库数量柱状图
+const chartKnowledge = ref(null)        // 各类知识库调用数量饼图
+const knowledgeGraphRef = ref(null)     // 知识图谱容器
+let knowledgeGraphChart = null          // 知识图谱图表实例
+
+// ==================== 统计数据常量 ====================
+// 顶部统计卡片数据
+const STATISTICS_DATA = {
+  totalDialog: 25431,       // 总对话数
+  realtimeUsers: 33         // 实时用户数
+}
+
+// 数字千分位格式化方法
+const formatNumber = (num) => {
+  if (num === null || num === undefined || isNaN(num)) return '0'
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+// 实时用户柱状图数据
+const REALTIME_BAR_DATA = [233, 111, 233, 333, 543, 546, 765, 775, 886]
 
 // 各类知识库调用数量数据
 const knowledgeData = [
@@ -257,7 +303,7 @@ const getMiniChartOption = () => {
  */
 const getBarChartOption = () => {
   const gradientColors = ['#32E1FB', '#017CFF']
-  const barData = [233, 111, 233, 333, 543, 546, 765, 775, 886]
+  const barData = REALTIME_BAR_DATA
   
   return {
     backgroundColor: 'transparent',
@@ -401,7 +447,12 @@ const getOption = () => {
       containLabel: true
     },
     tooltip: {
-      trigger: 'item'
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const data = params[0]
+        return `${data.name}<br/>${data.value} 个`
+      }
     },
     animation: true,
     xAxis: [{
@@ -458,7 +509,7 @@ const getOption = () => {
       axisLine: { show: false }
     }],
     series: [{
-      name: '内部柱子',
+      name: '收藏模板数量',
       type: 'bar',
       barWidth: 15,
       z: 19,
@@ -488,6 +539,191 @@ const getOption = () => {
 }
 
 /**
+ * 初始化知识图谱（二叉树关系图）
+ */
+const initKnowledgeGraph = () => {
+  if (!knowledgeGraphRef.value) return
+  
+  knowledgeGraphChart = echarts.init(knowledgeGraphRef.value)
+
+  // 关系图数据
+  const myGraphData = [
+    {
+      "parentNode": "海外市场调研",
+      "childNodes": [
+        "每日待办", "用户反馈", "市场部周报", "拉新手段调研",
+        "发布会复盘", "定期回顾", "人力追踪表", "产品视频汇总", "项目进度表"
+      ]
+    },
+    { "parentNode": "每日待办", "childNodes": ["工作总结", "周期回顾"] },
+    { "parentNode": "人力追踪表", "childNodes": ["亮点项目汇总"] },
+    { "parentNode": "项目进度表", "childNodes": ["增长专项跟踪表"] },
+    { "parentNode": "发布会复盘", "childNodes": ["发布会传播素材"] },
+    { "parentNode": "市场部周报", "childNodes": ["产品分析"] }
+  ];
+
+  // 判断节点是否有子节点
+  function hasChildren(nodeName) {
+    for(let i = 0; i < myGraphData.length; i++) {
+      if(myGraphData[i].parentNode === nodeName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 防重复添加节点
+  function getNodes(parentNode, childNodes, nodes){
+    let pnode;
+    for(let i=0; i<nodes.length; i++){
+      if(parentNode == nodes[i].nodename){
+        pnode = nodes[i];
+      }
+    }
+    for(let i=0; i<childNodes.length; i++){
+      let exist = false;
+      for(let j=0; j<nodes.length; j++){
+        if(nodes[j].nodename === childNodes[i]){
+          exist = true;
+          break;
+        }
+      }
+      if(!exist){
+        nodes.push({
+          nodename : childNodes[i],
+          nodelevel: pnode.nodelevel+1,
+          parentnode: parentNode,
+        });
+      }
+    }
+  }
+
+  // 节点样式
+  function setNodeData(nodes, listdata) {
+    for(let i=0; i<nodes.length; i++){
+      let name = nodes[i].nodename;
+      let size = 25;
+      let color = '#326FFE';
+
+      if(name === '海外市场调研'){
+        size = 50;
+        listdata.push({
+          category: nodes[i].nodelevel,
+          name: name,
+          symbolSize: size,
+          draggable: true,
+          itemStyle: {
+            color: {
+              type: 'radial',
+              x: 0.5, y: 0.5, r: 0.5,
+              colorStops: [
+                { offset: 0, color: '#326FFE' },
+                { offset: 0.7, color: '#326FFE' },
+                { offset: 0.7, color: 'rgba(50,111,254, 0.2)' },
+                { offset: 1, color: 'rgba(50,111,254, 0.2)' }
+              ]
+            }
+          }
+        });
+        continue;
+      }
+
+      if(['用户反馈','人力追踪表','项目进度表','增长专项跟踪表'].includes(name)){
+        color = '#38C728';
+      }
+
+      listdata.push({
+        category: nodes[i].nodelevel,
+        name: name,
+        symbolSize: size,
+        draggable: true,
+        itemStyle: { color: color }
+      });
+    }
+  }
+
+  // 连线逻辑
+  function setLinkData(childList, parentnode, links) {
+    for(let i=0; i<childList.length; i++){
+      let childName = childList[i];
+      let edgeLen = hasChildren(childName) ? 120 : 200;
+
+      links.push({
+        source: parentnode,
+        target: childName,
+        edgeLength: edgeLen,
+        lineStyle: {
+          normal: { color: '#ccc', width: 1, curveness: 0 }
+        }
+      });
+    }
+  }
+
+  let listdata = [];
+  let linksdata = [];
+  let nodes =[{"nodename":"海外市场调研","nodelevel":0,"parentnode":null}];
+
+  for(let i=0; i < myGraphData.length; i++){
+    getNodes(myGraphData[i].parentNode, myGraphData[i].childNodes, nodes);
+    setLinkData(myGraphData[i].childNodes, myGraphData[i].parentNode, linksdata);
+  }
+  setNodeData(nodes, listdata);  
+
+  let levels = 0;
+  let legend_data = [];
+  let series_categories = [];
+  let temp = ["一","二","三","四","五"];
+  for(let i=0; i < nodes.length; i++){
+    levels = Math.max(levels, nodes[i].nodelevel);
+  }
+  for(let i=0; i<=levels; i++){
+    legend_data.push({ name : i===0?'父节点':'层级'+temp[i], icon : 'rect' });
+    series_categories.push({ name : i===0?'父节点':'层级'+temp[i], symbol : 'circle' });
+  }
+
+  // ECharts 配置
+  const option = {
+    tooltip: { formatter: '{b}' },
+    backgroundColor: '#FFFFFF',
+    legend: { show: false },
+    animationDuration: 0,
+    series: [{
+      name: '关系图',
+      type: 'graph',
+      layout: 'force',
+      force: {
+        repulsion: 500,
+        gravity: 0.2,
+        layoutAnimation: true
+      },
+      data: listdata,
+      links: linksdata,
+      categories: series_categories,
+      roam: true,
+      label: {
+        normal: {
+          show: true,
+          position: 'bottom',
+          formatter: '{b}',
+          fontSize: 14,
+          fontWeight: 'bold',
+          color: '#666666'
+        }
+      },
+      lineStyle: {
+        normal: {
+          opacity: 0.9,
+          width: 0.5,
+          curveness: 0
+        }
+      }
+    }]
+  }
+
+  knowledgeGraphChart.setOption(option)
+}
+
+/**
  * 组件挂载时初始化图表
  */
 onMounted(() => {
@@ -511,6 +747,12 @@ onMounted(() => {
     const chart = echarts.init(chartKnowledge.value)
     chart.setOption(getKnowledgeOption())
   }
+  // 初始化知识图谱
+  initKnowledgeGraph()
+  // 知识图谱窗口resize监听
+  window.addEventListener('resize', () => knowledgeGraphChart?.resize())
+  // 初始化滚动条控制
+  initScrollableLists()
 })
 </script>
 
@@ -618,6 +860,14 @@ onMounted(() => {
   background: #ffffff;
   padding: 16px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.knowledge-graph-container {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
 }
 
 .card-user-record {
@@ -824,7 +1074,7 @@ onMounted(() => {
 .realtime-item {
   width: 100%;
   height: 113px;
-  background: linear-gradient(178deg, #E0EDFF 0%, rgba(224, 243, 255, 0) 100%);
+  background: #F2F9FF;
   border-radius: 4px;
   padding: 12px;
   box-sizing: border-box;
@@ -887,5 +1137,38 @@ onMounted(() => {
   text-align: left;
   font-style: normal;
   justify-content: center;
+}
+
+/* 滚动条默认隐藏 */
+.scrollable-list {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scrollable-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollable-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+
+/* 滚动时显示滚动条 */
+.scrollable-list.show-scrollbar {
+  scrollbar-color: #ccc #f5f5f5;
+}
+
+.scrollable-list.show-scrollbar::-webkit-scrollbar-thumb {
+  background: #ccc;
+}
+
+.scrollable-list.show-scrollbar::-webkit-scrollbar-track {
+  background: #f5f5f5;
 }
 </style>
